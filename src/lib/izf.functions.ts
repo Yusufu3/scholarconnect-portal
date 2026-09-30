@@ -88,7 +88,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
-    const expected = process.env["IZF_ADMIN_PASSWORD"];
+    const expected = process.env["IZF_ADMIN_PASS"];
     const m = await sess();
     if (!expected) throw new Error("Admin password is not configured");
     if (!m.passwordMatches(data.password, expected)) return { ok: false as const, token: null };
