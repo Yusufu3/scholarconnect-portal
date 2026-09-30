@@ -15,6 +15,13 @@
       "when": 1790783192469,
       "tag": "0001_remove_test_submission",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790783558480,
+      "tag": "0002_remove_test_submission_2",
+      "breakpoints": true
     }
   ]
 }

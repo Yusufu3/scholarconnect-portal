@@ -33,17 +33,24 @@ function StudentPage() {
   const [loading, setLoading] = useState(false);
   const search = useServerFn(matchStudent);
 
-  async function onSearch(e: React.FormEvent) {
+  async function onSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (name.trim().length < 2) return;
+    const typed = String(new FormData(e.currentTarget).get("name") ?? name);
+    if (typed !== name) setName(typed);
+    if (typed.trim().length < 2) {
+      setMatches(null);
+      return;
+    }
     setLoading(true);
     try {
-      const res = await search({ data: { name } });
+      const res = await search({ data: { name: typed } });
       setMatches(res);
       if (res.length) {
         setSelected(res[0]!);
         setStep("confirm");
       }
+    } catch {
+      setMatches([]);
     } finally {
       setLoading(false);
     }
@@ -65,9 +72,9 @@ function StudentPage() {
               <form onSubmit={onSearch} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
+                  <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
                 </div>
-                <Button type="submit" className="w-full" size="lg" disabled={loading || name.trim().length < 2}>
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
                   <Search className="mr-2 h-4 w-4" /> {loading ? "Searching…" : "Search"}
                 </Button>
                 {matches && matches.length === 0 && (

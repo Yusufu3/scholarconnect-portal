@@ -1,0 +1,1 @@
+DELETE FROM public.registrations WHERE personal_account_number = 'PANTEST999';

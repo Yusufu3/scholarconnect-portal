@@ -84,7 +84,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
-    const expected = process.env["ADMIN_PASSWORD"];
+    const expected = process.env["IZF_ADMIN_PASSWORD"];
     if (!expected || !(await sess()).passwordMatches(data.password, expected)) return { ok: false };
     const s = await getAdminSession();
     await s.update({ admin: true });
