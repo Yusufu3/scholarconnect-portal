@@ -11,5 +11,5 @@
 
 ## IZF decisions
 - All data access goes through server functions using the service client; tables have RLS on with no public policies (why: students/admin never touch the database directly).
-- Admin auth is a shared password (ADMIN_PASSWORD secret) + encrypted session cookie in src/lib/admin-session.server.ts (why: single admin, no accounts requested).
+- Admin auth is a shared password (IZF_ADMIN_PASSWORD secret) + encrypted session cookie in src/lib/admin-session.server.ts (why: single admin, no accounts requested).
 - Name matching is deterministic OSA/Damerau-Levenshtein in src/lib/fuzzy.ts, threshold 0.72 (why: user forbade AI matching).
