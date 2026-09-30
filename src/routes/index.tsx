@@ -55,18 +55,6 @@ function StudentPage() {
       setLoading(false);
     }
   }
-  async function _unused() {
-    try {
-      const res = await search({ data: { name } });
-      setMatches(res);
-      if (res.length) {
-        setSelected(res[0]!);
-        setStep("confirm");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -84,9 +72,9 @@ function StudentPage() {
               <form onSubmit={onSearch} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
+                  <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
                 </div>
-                <Button type="submit" className="w-full" size="lg" disabled={loading || name.trim().length < 2}>
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
                   <Search className="mr-2 h-4 w-4" /> {loading ? "Searching…" : "Search"}
                 </Button>
                 {matches && matches.length === 0 && (
