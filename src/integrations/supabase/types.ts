@@ -14,7 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      eligible_students: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          institution: string
+          programme: string | null
+          reg_number: string | null
+          sn: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          institution?: string
+          programme?: string | null
+          reg_number?: string | null
+          sn?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          institution?: string
+          programme?: string | null
+          reg_number?: string | null
+          sn?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      registrations: {
+        Row: {
+          created_at: string
+          eligible_student_id: string
+          first_name: string
+          id: string
+          middle_name: string | null
+          personal_account_number: string
+          programme: string
+          reg_number: string
+          surname: string
+          year_of_study: string
+        }
+        Insert: {
+          created_at?: string
+          eligible_student_id: string
+          first_name: string
+          id?: string
+          middle_name?: string | null
+          personal_account_number: string
+          programme: string
+          reg_number: string
+          surname: string
+          year_of_study: string
+        }
+        Update: {
+          created_at?: string
+          eligible_student_id?: string
+          first_name?: string
+          id?: string
+          middle_name?: string | null
+          personal_account_number?: string
+          programme?: string
+          reg_number?: string
+          surname?: string
+          year_of_study?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registrations_eligible_student_id_fkey"
+            columns: ["eligible_student_id"]
+            isOneToOne: true
+            referencedRelation: "eligible_students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
