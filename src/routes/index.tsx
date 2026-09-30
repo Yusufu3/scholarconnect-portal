@@ -33,10 +33,29 @@ function StudentPage() {
   const [loading, setLoading] = useState(false);
   const search = useServerFn(matchStudent);
 
-  async function onSearch(e: React.FormEvent) {
+  async function onSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (name.trim().length < 2) return;
+    const typed = String(new FormData(e.currentTarget).get("name") ?? name);
+    if (typed !== name) setName(typed);
+    if (typed.trim().length < 2) {
+      setMatches(null);
+      return;
+    }
     setLoading(true);
+    try {
+      const res = await search({ data: { name: typed } });
+      setMatches(res);
+      if (res.length) {
+        setSelected(res[0]!);
+        setStep("confirm");
+      }
+    } catch {
+      setMatches([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function _unused() {
     try {
       const res = await search({ data: { name } });
       setMatches(res);
