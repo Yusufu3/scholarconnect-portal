@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { nameSimilarity, MATCH_THRESHOLD } from "./fuzzy";
-import { getAdminSession, passwordMatches, requireAdmin } from "./admin-session.server";
+const sess = () => import("./admin-session.server");
+const requireAdmin = async () => (await sess()).requireAdmin();
+const getAdminSession = async () => (await sess()).getAdminSession();
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -83,7 +85,7 @@ export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
     const expected = process.env["ADMIN_PASSWORD"];
-    if (!expected || !passwordMatches(data.password, expected)) return { ok: false };
+    if (!expected || !(await sess()).passwordMatches(data.password, expected)) return { ok: false };
     const s = await getAdminSession();
     await s.update({ admin: true });
     return { ok: true };
