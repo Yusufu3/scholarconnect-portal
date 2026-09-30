@@ -380,9 +380,12 @@ function ExportSection({ students }: { students: Student[] }) {
   const cellCls = layout === "grid" ? "border px-2 py-1.5" : "px-2 py-1.5";
 
   async function run(kind: "pdf" | "xlsx") {
-    if (!picked.length) return toast.error("Select at least one column");
+    if (!picked.length) { toast.error("Select at least one column"); return; }
     setBusy(true);
-    try { kind === "pdf" ? await downloadPdf(title, header, body, layout) : await downloadExcel(title, header, body); }
+    try {
+      if (kind === "pdf") await downloadPdf(title, header, body, layout);
+      else await downloadExcel(title, header, body);
+    }
     catch { toast.error("Export failed"); }
     finally { setBusy(false); }
   }

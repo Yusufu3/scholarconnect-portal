@@ -21,7 +21,7 @@ export async function downloadPdf(title: string, columns: string[], rows: string
     theme: layout === "grid" ? "grid" : layout === "striped" ? "striped" : "plain",
     styles: { fontSize: 8.5, cellPadding: 4 },
     headStyles: layout === "minimal" ? { fontStyle: "bold", textColor: 20, fillColor: false as unknown as number } : { fillColor: [31, 94, 70], textColor: 255 },
-    alternateRowStyles: layout === "striped" ? { fillColor: [242, 246, 243] } : undefined,
+    alternateRowStyles: layout === "striped" ? { fillColor: [242, 246, 243] } : {},
     didDrawPage: () => {
       const h = doc.internal.pageSize.getHeight();
       doc.setFontSize(8);
