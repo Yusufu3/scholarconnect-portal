@@ -11,5 +11,5 @@
 
 ## IZF decisions
 - All data access goes through server functions using the service client; tables have RLS on with no public policies (why: students/admin never touch the database directly).
-- Admin auth: shared password (IZF_ADMIN_PASSWORD) checked server-side, returns an HMAC-signed 8h token kept in sessionStorage and sent with every admin server call (why: iframe preview blocks cookies, which broke cookie sessions).
+- Admin auth: shared password (IZF_ADMIN_PASS) checked server-side, returns an HMAC-signed 8h token kept in sessionStorage and sent with every admin server call (why: iframe preview blocks cookies, which broke cookie sessions).
 - Name matching is deterministic OSA/Damerau-Levenshtein in src/lib/fuzzy.ts, threshold 0.72 (why: user forbade AI matching).
