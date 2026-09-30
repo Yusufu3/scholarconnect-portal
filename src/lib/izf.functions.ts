@@ -2,8 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { nameSimilarity, MATCH_THRESHOLD } from "./fuzzy";
 const sess = () => import("./admin-session.server");
-const requireAdmin = async () => (await sess()).requireAdmin();
-const getAdminSession = async () => (await sess()).getAdminSession();
+const requireAdmin = async (token?: string) => (await sess()).requireAdmin(token);
+const tok = z.string().min(10).max(500);
 
 async function db() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -33,7 +33,11 @@ export const matchStudent = createServerFn({ method: "POST" })
       .filter((r) => r.score >= MATCH_THRESHOLD)
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
-    return scored.map(({ score: _s, ...r }) => r);
+    const top = scored[0];
+    const second = scored[1];
+    // Strong = clearly the best, no close competitor.
+    const strong = !!top && top.score >= 0.85 && (!second || top.score - second.score >= 0.08);
+    return { strong, matches: scored.map(({ score: _s, ...r }) => r) };
   });
 
 const regSchema = z.object({
@@ -85,25 +89,20 @@ export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
     const expected = process.env["IZF_ADMIN_PASSWORD"];
-    if (!expected || !(await sess()).passwordMatches(data.password, expected)) return { ok: false };
-    const s = await getAdminSession();
-    await s.update({ admin: true });
-    return { ok: true };
+    const m = await sess();
+    if (!expected) throw new Error("Admin password is not configured");
+    if (!m.passwordMatches(data.password, expected)) return { ok: false as const, token: null };
+    return { ok: true as const, token: m.issueAdminToken() };
   });
 
-export const adminLogout = createServerFn({ method: "POST" }).handler(async () => {
-  const s = await getAdminSession();
-  await s.clear();
-  return { ok: true };
-});
+export const adminStatus = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ token: z.string().max(500).optional() }).parse(d))
+  .handler(async ({ data }) => ({ admin: (await sess()).verifyAdminToken(data.token) }));
 
-export const adminStatus = createServerFn({ method: "GET" }).handler(async () => {
-  const s = await getAdminSession();
-  return { admin: !!s.data.admin };
-});
-
-export const adminListStudents = createServerFn({ method: "GET" }).handler(async () => {
-  await requireAdmin();
+export const adminListStudents = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ token: tok }).parse(d))
+  .handler(async ({ data: { token } }) => {
+  await requireAdmin(token);
   const sb = await db();
   const { data, error } = await sb
     .from("eligible_students")
@@ -127,9 +126,9 @@ const studentSchema = z.object({
 });
 
 export const adminCreateStudent = createServerFn({ method: "POST" })
-  .inputValidator((d) => studentSchema.parse(d))
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .inputValidator((d) => studentSchema.extend({ token: tok }).parse(d))
+  .handler(async ({ data: { token, ...data } }) => {
+    await requireAdmin(token);
     const sb = await db();
     const { error } = await sb.from("eligible_students").insert({
       ...data,
@@ -141,9 +140,9 @@ export const adminCreateStudent = createServerFn({ method: "POST" })
   });
 
 export const adminUpdateStudent = createServerFn({ method: "POST" })
-  .inputValidator((d) => studentSchema.extend({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .inputValidator((d) => studentSchema.extend({ id: z.string().uuid(), token: tok }).parse(d))
+  .handler(async ({ data: { token, ...data } }) => {
+    await requireAdmin(token);
     const sb = await db();
     const { id, ...rest } = data;
     const { error } = await sb
@@ -160,9 +159,9 @@ export const adminUpdateStudent = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteStudent = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .inputValidator((d) => z.object({ id: z.string().uuid(), token: tok }).parse(d))
+  .handler(async ({ data: { token, ...data } }) => {
+    await requireAdmin(token);
     const sb = await db();
     const { error } = await sb.from("eligible_students").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -170,9 +169,9 @@ export const adminDeleteStudent = createServerFn({ method: "POST" })
   });
 
 export const adminDeleteRegistration = createServerFn({ method: "POST" })
-  .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
-  .handler(async ({ data }) => {
-    await requireAdmin();
+  .inputValidator((d) => z.object({ id: z.string().uuid(), token: tok }).parse(d))
+  .handler(async ({ data: { token, ...data } }) => {
+    await requireAdmin(token);
     const sb = await db();
     const { error } = await sb.from("registrations").delete().eq("id", data.id);
     if (error) throw new Error(error.message);

@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  adminStatus, adminLogin, adminLogout, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminDeleteRegistration,
+  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminDeleteRegistration,
 } from "@/lib/izf.functions";
 import { downloadExcel, downloadPdf, type Layout } from "@/lib/export";
 
@@ -35,9 +35,22 @@ export const Route = createFileRoute("/admin")({
 
 type Student = Awaited<ReturnType<typeof adminListStudents>>[number];
 
+const TOKEN_KEY = "izf-admin-token";
+const getToken = () => (typeof window === "undefined" ? "" : window.sessionStorage.getItem(TOKEN_KEY) ?? "");
+
 function AdminPage() {
   const status = useServerFn(adminStatus);
-  const q = useQuery({ queryKey: ["admin-status"], queryFn: () => status() });
+  const q = useQuery({
+    queryKey: ["admin-status"],
+    queryFn: async () => {
+      const token = getToken();
+      if (!token) return { admin: false };
+      const r = await status({ data: { token } });
+      if (!r.admin) window.sessionStorage.removeItem(TOKEN_KEY);
+      return r;
+    },
+    staleTime: Infinity,
+  });
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader admin />
@@ -65,10 +78,18 @@ function Login() {
             onSubmit={async (e) => {
               e.preventDefault();
               setBusy(true);
-              const r = await login({ data: { password: pw } });
-              setBusy(false);
-              if (r.ok) { setPw(""); qc.invalidateQueries({ queryKey: ["admin-status"] }); }
-              else setErr(true);
+              try {
+                const r = await login({ data: { password: pw } });
+                if (r.ok && r.token) {
+                  window.sessionStorage.setItem(TOKEN_KEY, r.token);
+                  qc.setQueryData(["admin-status"], { admin: true });
+                  setPw("");
+                } else setErr(true);
+              } catch {
+                toast.error("Login failed — please try again.");
+              } finally {
+                setBusy(false);
+              }
             }}
           >
             <div className="space-y-2">
@@ -86,9 +107,8 @@ function Login() {
 
 function Dashboard() {
   const list = useServerFn(adminListStudents);
-  const logout = useServerFn(adminLogout);
   const qc = useQueryClient();
-  const q = useQuery({ queryKey: ["students"], queryFn: () => list() });
+  const q = useQuery({ queryKey: ["students"], queryFn: () => list({ data: { token: getToken() } }) });
   const students = q.data ?? [];
   const submitted = students.filter((s) => s.registration).length;
 
@@ -99,7 +119,7 @@ function Dashboard() {
           <h1 className="font-serif text-2xl font-bold">Admin Dashboard</h1>
           <p className="text-sm text-muted-foreground">{students.length} eligible · {submitted} submitted · {students.length - submitted} pending</p>
         </div>
-        <Button variant="outline" onClick={async () => { await logout(); qc.clear(); qc.invalidateQueries({ queryKey: ["admin-status"] }); }}>
+        <Button variant="outline" onClick={() => { window.sessionStorage.removeItem(TOKEN_KEY); qc.clear(); qc.setQueryData(["admin-status"], { admin: false }); }}>
           <LogOut className="mr-2 h-4 w-4" /> Log out
         </Button>
       </div>
@@ -109,7 +129,7 @@ function Dashboard() {
           <TabsTrigger value="submissions">Submissions</TabsTrigger>
           <TabsTrigger value="export">Export</TabsTrigger>
         </TabsList>
-        {q.isLoading ? <p className="text-muted-foreground">Loading…</p> : q.isError ? <p className="text-destructive">Could not load data.</p> : (
+        {q.isLoading ? <p className="text-muted-foreground">Loading…</p> : q.isError ? <p className="text-destructive">Could not load data: {(q.error as Error)?.message}. Try logging out and in again.</p> : (
           <>
             <TabsContent value="eligible"><EligibleSection students={students} /></TabsContent>
             <TabsContent value="submissions"><SubmissionsSection students={students} /></TabsContent>
@@ -144,7 +164,7 @@ function EligibleSection({ students }: { students: Student[] }) {
   const qc = useQueryClient();
   const rows = useSearch(students, term);
   const delM = useMutation({
-    mutationFn: (id: string) => del({ data: { id } }),
+    mutationFn: (id: string) => del({ data: { id, token: getToken() } }),
     onSuccess: () => { toast.success("Student deleted"); qc.invalidateQueries({ queryKey: ["students"] }); },
     onError: () => toast.error("Delete failed"),
   });
@@ -222,8 +242,8 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
     setBusy(true);
     const data = { sn: f.sn ? Number(f.sn) : null, full_name: f.full_name, reg_number: f.reg_number || null, programme: f.programme || null, institution: f.institution };
     try {
-      if (student) await update({ data: { ...data, id: student.id } });
-      else await create({ data });
+      if (student) await update({ data: { ...data, id: student.id, token: getToken() } });
+      else await create({ data: { ...data, token: getToken() } });
       toast.success(student ? "Student updated" : "Student added");
       qc.invalidateQueries({ queryKey: ["students"] });
       onClose();
@@ -337,7 +357,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
               if (!resetting?.registration) return;
-              try { await delReg({ data: { id: resetting.registration.id } }); toast.success("Submission removed"); qc.invalidateQueries({ queryKey: ["students"] }); }
+              try { await delReg({ data: { id: resetting.registration.id, token: getToken() } }); toast.success("Submission removed"); qc.invalidateQueries({ queryKey: ["students"] }); }
               catch { toast.error("Could not remove"); }
             }}>Remove</AlertDialogAction>
           </AlertDialogFooter>

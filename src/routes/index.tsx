@@ -31,10 +31,13 @@ function StudentPage() {
   const [matches, setMatches] = useState<Match[] | null>(null);
   const [selected, setSelected] = useState<Match | null>(null);
   const [loading, setLoading] = useState(false);
+  const [strong, setStrong] = useState(false);
+  const [searchError, setSearchError] = useState("");
   const search = useServerFn(matchStudent);
 
   async function onSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSearchError("");
     const typed = String(new FormData(e.currentTarget).get("name") ?? name);
     if (typed !== name) setName(typed);
     if (typed.trim().length < 2) {
@@ -44,13 +47,16 @@ function StudentPage() {
     setLoading(true);
     try {
       const res = await search({ data: { name: typed } });
-      setMatches(res);
-      if (res.length) {
-        setSelected(res[0]!);
+      setMatches(res.matches);
+      setStrong(res.strong);
+      if (res.matches.length) {
+        setSelected(res.strong ? res.matches[0]! : null);
         setStep("confirm");
       }
-    } catch {
-      setMatches([]);
+    } catch (err) {
+      console.error(err);
+      setMatches(null);
+      setSearchError("Search failed. Please check your connection and try again.");
     } finally {
       setLoading(false);
     }
@@ -75,12 +81,13 @@ function StudentPage() {
                   <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
                 </div>
                 <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                  <Search className="mr-2 h-4 w-4" /> {loading ? "Searching…" : "Search"}
+                  <Search className="mr-2 h-4 w-4" /> {loading ? "Checking…" : "Check Eligibility"}
                 </Button>
+                {searchError && <p className="text-sm text-destructive">{searchError}</p>}
                 {matches && matches.length === 0 && (
                   <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>We could not find a reliable match on the eligible list. Check your spelling and try again, or contact the IZF office.</span>
+                    <span>We could not find your name on the official eligible list. Please check your spelling and try again.</span>
                   </div>
                 )}
               </form>
@@ -91,8 +98,8 @@ function StudentPage() {
         {step === "confirm" && matches && (
           <Card>
             <CardHeader>
-              <CardTitle className="font-serif text-2xl">Is this you?</CardTitle>
-              <CardDescription>You searched for “{name}”. Select your official name to continue.</CardDescription>
+              <CardTitle className="font-serif text-2xl">{strong ? "Is this you?" : "Select your name"}</CardTitle>
+              <CardDescription>{strong ? <>We found your name on the official eligible list.</> : <>You searched for “{name}”. We found possible matches — select your official name. You will confirm with your Registration Number on the next step.</>}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {matches.map((m) => (
@@ -131,7 +138,7 @@ function StudentPage() {
               <p className="text-muted-foreground">Please join the official IZF Scholarship WhatsApp Group for important updates.</p>
               <Button asChild size="lg" className="w-full bg-success text-success-foreground hover:bg-success/90 sm:w-auto">
                 <a href={WHATSAPP} target="_blank" rel="noopener noreferrer">
-                  <MessageCircle className="mr-2 h-5 w-5" /> JOIN WHATSAPP GROUP
+                  <MessageCircle className="mr-2 h-5 w-5" /> Join the IZF Scholarship WhatsApp Group
                 </a>
               </Button>
             </CardContent>
