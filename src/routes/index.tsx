@@ -1,24 +1,242 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
+import { CheckCircle2, Search, ArrowLeft, MessageCircle, AlertCircle } from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { matchStudent, submitRegistration } from "@/lib/izf.functions";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "IZF Scholarship Student Registration" },
+      { name: "description", content: "Eligible IZF scholarship students: find your name and submit your details." },
+      { property: "og:title", content: "IZF Scholarship Student Registration" },
+      { property: "og:description", content: "Find your name and submit your IZF scholarship information." },
+    ],
+  }),
+  component: StudentPage,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+type Match = { id: string; full_name: string; programme: string | null; registered: boolean };
+const WHATSAPP = "https://chat.whatsapp.com/FkxeuK5ULvyDfPkliBcErU";
+
+function StudentPage() {
+  const [step, setStep] = useState<"search" | "confirm" | "form" | "done">("search");
+  const [name, setName] = useState("");
+  const [matches, setMatches] = useState<Match[] | null>(null);
+  const [selected, setSelected] = useState<Match | null>(null);
+  const [loading, setLoading] = useState(false);
+  const search = useServerFn(matchStudent);
+
+  async function onSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (name.trim().length < 2) return;
+    setLoading(true);
+    try {
+      const res = await search({ data: { name } });
+      setMatches(res);
+      if (res.length) {
+        setSelected(res[0]!);
+        setStep("confirm");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+      <main className="mx-auto max-w-xl px-4 py-8 sm:py-12">
+        {step !== "done" && <Steps step={step} />}
+
+        {step === "search" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl">Find your name</CardTitle>
+              <CardDescription>Enter your full name as registered at the university.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={onSearch} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full name</Label>
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Aisha Jiya" autoComplete="name" />
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={loading || name.trim().length < 2}>
+                  <Search className="mr-2 h-4 w-4" /> {loading ? "Searching…" : "Search"}
+                </Button>
+                {matches && matches.length === 0 && (
+                  <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>We could not find a reliable match on the eligible list. Check your spelling and try again, or contact the IZF office.</span>
+                  </div>
+                )}
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "confirm" && matches && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl">Is this you?</CardTitle>
+              <CardDescription>You searched for “{name}”. Select your official name to continue.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {matches.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setSelected(m)}
+                  className={`w-full rounded-md border p-4 text-left transition ${selected?.id === m.id ? "border-primary bg-secondary ring-2 ring-primary/30" : "hover:bg-muted"}`}
+                >
+                  <div className="font-medium">{m.full_name}</div>
+                  {m.programme && <div className="text-sm text-muted-foreground">{m.programme}</div>}
+                  {m.registered && <div className="mt-1 text-sm text-destructive">Already submitted</div>}
+                </button>
+              ))}
+              <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
+                <Button variant="outline" className="flex-1" onClick={() => setStep("search")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Not me
+                </Button>
+                <Button className="flex-1" disabled={!selected || selected.registered} onClick={() => setStep("form")}>
+                  Yes, this is me
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {step === "form" && selected && (
+          <RegistrationForm student={selected} onBack={() => setStep("confirm")} onDone={() => setStep("done")} />
+        )}
+
+        {step === "done" && (
+          <Card className="text-center">
+            <CardContent className="space-y-5 py-10">
+              <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
+              <h1 className="font-serif text-2xl font-bold">Congratulations! Your scholarship information has been successfully submitted.</h1>
+              <p className="text-muted-foreground">Please join the official IZF Scholarship WhatsApp Group for important updates.</p>
+              <Button asChild size="lg" className="w-full bg-success text-success-foreground hover:bg-success/90 sm:w-auto">
+                <a href={WHATSAPP} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="mr-2 h-5 w-5" /> JOIN WHATSAPP GROUP
+                </a>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </main>
     </div>
+  );
+}
+
+function Steps({ step }: { step: string }) {
+  const items = [["search", "Find name"], ["confirm", "Confirm"], ["form", "Details"]];
+  const idx = items.findIndex(([k]) => k === step);
+  return (
+    <ol className="mb-6 flex items-center gap-2 text-xs sm:text-sm">
+      {items.map(([k, l], i) => (
+        <li key={k} className="flex flex-1 items-center gap-2">
+          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${i <= idx ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{i + 1}</span>
+          <span className={i <= idx ? "font-medium" : "text-muted-foreground"}>{l}</span>
+          {i < items.length - 1 && <span className="h-px flex-1 bg-border" />}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack: () => void; onDone: () => void }) {
+  const parts = student.full_name.split(/\s+/);
+  const [f, setF] = useState({
+    first_name: parts[0] ?? "",
+    middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
+    surname: parts.length > 1 ? parts[parts.length - 1]! : "",
+    personal_account_number: "",
+    reg_number: "",
+    year_of_study: "",
+    programme: student.programme ?? "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverError, setServerError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const submit = useServerFn(submitRegistration);
+  const set = (k: keyof typeof f) => (v: string) => setF((p) => ({ ...p, [k]: v }));
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    (["first_name", "surname", "personal_account_number", "reg_number", "year_of_study", "programme"] as const).forEach((k) => {
+      if (!f[k].trim()) errs[k] = "This field is required";
+    });
+    setErrors(errs);
+    setServerError("");
+    if (Object.keys(errs).length) return;
+    setSaving(true);
+    try {
+      const res = await submit({ data: { ...f, eligible_student_id: student.id } });
+      if (res.ok) onDone();
+      else setServerError(res.error);
+    } catch {
+      setServerError("Please check your details and try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const field = (k: keyof typeof f, label: string, opts: { optional?: boolean; note?: string; readOnly?: boolean } = {}) => (
+    <div className="space-y-1.5">
+      <Label htmlFor={k}>
+        {label} {opts.optional ? <span className="font-normal text-muted-foreground">(optional)</span> : <span className="text-destructive">*</span>}
+      </Label>
+      <Input id={k} value={f[k]} readOnly={opts.readOnly} className={opts.readOnly ? "bg-muted" : ""} onChange={(e) => set(k)(e.target.value)} aria-invalid={!!errors[k]} />
+      {opts.note && <p className="text-sm font-medium text-accent-foreground">{opts.note}</p>}
+      {errors[k] && <p className="text-sm text-destructive">{errors[k]}</p>}
+    </div>
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-serif text-2xl">Your details</CardTitle>
+        <CardDescription>Registering as <strong className="text-foreground">{student.full_name}</strong></CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+          {field("first_name", "First Name")}
+          {field("middle_name", "Middle Name", { optional: true })}
+          {field("surname", "Surname")}
+          {field("personal_account_number", "Personal Account Number", {
+            note: "Personal Account Number must be taken from the University portal, NOT from the bank.",
+          })}
+          {field("reg_number", "Registration Number")}
+          <div className="space-y-1.5">
+            <Label>Year of Study <span className="text-destructive">*</span></Label>
+            <Select value={f.year_of_study} onValueChange={set("year_of_study")}>
+              <SelectTrigger aria-invalid={!!errors.year_of_study}><SelectValue placeholder="Select year" /></SelectTrigger>
+              <SelectContent>
+                {["1", "2", "3", "4", "5", "6"].map((y) => <SelectItem key={y} value={`Year ${y}`}>Year {y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {errors.year_of_study && <p className="text-sm text-destructive">{errors.year_of_study}</p>}
+          </div>
+          {field("programme", "Programme Name", { readOnly: !!student.programme })}
+          {serverError && (
+            <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {serverError}
+            </div>
+          )}
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
+            <Button type="button" variant="outline" className="flex-1" onClick={onBack}>Back</Button>
+            <Button type="submit" className="flex-1" size="lg" disabled={saving}>{saving ? "Submitting…" : "Submit"}</Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
