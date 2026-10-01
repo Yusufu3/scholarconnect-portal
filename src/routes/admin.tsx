@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminDeleteRegistration,
+  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminDeleteRegistration, adminResetRegistration,
 } from "@/lib/izf.functions";
 import { downloadExcel, downloadPdf, type Layout } from "@/lib/export";
 
@@ -308,8 +308,9 @@ function SubmissionsSection({ students }: { students: Student[] }) {
   const [filter, setFilter] = useState("submitted");
   const [viewing, setViewing] = useState<Student | null>(null);
   const [resetting, setResetting] = useState<Student | null>(null);
-  const delReg = useServerFn(adminDeleteRegistration);
+  const resetRegistration = useServerFn(adminResetRegistration);
   const qc = useQueryClient();
+  const [resetBusy, setResetBusy] = useState(false);
   const searched = useSearch(students, term);
   const rows = searched.filter((s) => filter === "all" || (filter === "submitted" ? s.registration : !s.registration));
   return (
@@ -338,7 +339,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
                 <td className="p-3"><StatusBadge s={s} /></td>
                 <td className="p-3"><div className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" aria-label="View" onClick={() => setViewing(s)}><Eye className="h-4 w-4" /></Button>
-                  {s.registration && <Button size="icon" variant="ghost" aria-label="Remove submission" onClick={() => setResetting(s)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
+                  {s.registration && <Button size="sm" variant="outline" aria-label="Reset registration to pending" onClick={() => setResetting(s)} disabled={resetBusy}>Reset to Pending</Button>}
                 </div></td>
               </tr>
             ))}
@@ -350,16 +351,25 @@ function SubmissionsSection({ students }: { students: Student[] }) {
       <AlertDialog open={!!resetting} onOpenChange={(o) => !o && setResetting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove submission?</AlertDialogTitle>
-            <AlertDialogDescription>{resetting?.full_name}'s submitted details will be deleted so they can submit again. They stay on the eligible list.</AlertDialogDescription>
+            <AlertDialogTitle>Reset registration to Pending?</AlertDialogTitle>
+            <AlertDialogDescription>{resetting?.full_name}'s submitted registration will be reset to Pending so the student can submit again. The current submitted details will be cleared.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={async () => {
+            <AlertDialogAction onClick={async () => {
               if (!resetting?.registration) return;
-              try { await delReg({ data: { id: resetting.registration.id, token: getToken() } }); toast.success("Submission removed"); qc.invalidateQueries({ queryKey: ["students"] }); }
-              catch { toast.error("Could not remove"); }
-            }}>Remove</AlertDialogAction>
+              setResetBusy(true);
+              try {
+                await resetRegistration({ data: { id: resetting.registration.id, token: getToken() } });
+                toast.success("Registration reset to Pending. The student can submit again.");
+                setResetting(null);
+                await qc.invalidateQueries({ queryKey: ["students"] });
+              } catch {
+                toast.error("Could not reset registration to Pending.");
+              } finally {
+                setResetBusy(false);
+              }
+            }}>{resetBusy ? "Resetting…" : "Reset to Pending"}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
