@@ -171,3 +171,18 @@ export const adminDeleteRegistration = createServerFn({ method: "POST" })
     adminError(error);
     return { ok: true };
   });
+
+// Reset a submitted registration to the portal's existing Pending state.
+// Pending is represented by the absence of a registrations row, so the
+// existing protected delete RPC is used rather than introducing a second
+// status system that could diverge from the student submission flow.
+export const adminResetRegistration = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({ id: z.string().uuid(), token: tok }).parse(d))
+  .handler(async ({ data }) => {
+    const { error } = await publicDb().rpc("izf_admin_delete_registration", {
+      _token: data.token,
+      _id: data.id,
+    });
+    adminError(error);
+    return { ok: true };
+  });
