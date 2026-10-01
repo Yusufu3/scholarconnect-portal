@@ -9,10 +9,10 @@ const DEFAULT_KEY = "sb_publishable_D52T3DjblukZtb1pO4znLA_eiHoSjrC";
 
 export function publicDb() {
   const env = (typeof process !== "undefined" ? process.env : {}) as Record<string, string | undefined>;
-  const url = env["SUPABASE_URL"] || env["VITE_SUPABASE_URL"] || import.meta.env.VITE_SUPABASE_URL || DEFAULT_URL;
+  const url = env["SUPABASE_URL"] || env["VITE_SUPABASE_URL"] || import.meta.env['VITE_SUPABASE_URL'] || DEFAULT_URL;
   const key =
     env["SUPABASE_PUBLISHABLE_KEY"] || env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_KEY;
+    import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] || DEFAULT_KEY;
   return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
     global: {
