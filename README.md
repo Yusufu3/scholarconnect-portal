@@ -24,7 +24,7 @@ ADMIN:
 
 - Add a simple Admin Login button in a reasonable location.
 
-- Admin password: Yusufubamusi#1-
+- The admin password is stored only in the IZF_ADMIN_PASS server environment variable. It is never written in the repository or shown in the UI.
 
 - Protect the admin dashboard properly; do not expose the password in the normal UI.
 
@@ -47,8 +47,20 @@ This project was built with [Lovable](https://lovable.dev).
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/93134bf7-297c-4241-b4f5-e1627b54c416).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Stay in sync**: every change made in Lovable is committed straight into this repository.
 - **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+
+## Environment variables
+
+### Browser + build
+- `VITE_SUPABASE_URL` — Supabase project URL used by browser/build code.
+- `VITE_SUPABASE_PUBLISHABLE_KEY` — Supabase publishable key used by browser/build code.
+
+### Server only
+- `SUPABASE_URL` — Supabase project URL used by server-side code.
+- `SUPABASE_SERVICE_ROLE_KEY` — server-side Supabase service-role key. Never expose it to browser code or commit it.
+- `SESSION_SECRET` — secret used to sign admin session tokens. Never expose it to browser code or commit it.
+- `IZF_ADMIN_PASS` — admin password used only by the server. Never expose it to browser code or commit it.
 
 ## Development
 
@@ -60,3 +72,5 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+> Security note: if the old admin password was ever committed, removing it from the latest README does not remove it from Git history. Change `IZF_ADMIN_PASS` to a new password before using the portal in production.
