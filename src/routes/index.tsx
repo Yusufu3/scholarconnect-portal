@@ -185,9 +185,12 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    (["first_name", "surname", "personal_account_number", "reg_number", "year_of_study", "programme"] as const).forEach((k) => {
+    (["first_name", "surname", "reg_number", "year_of_study", "programme"] as const).forEach((k) => {
       if (!f[k].trim()) errs[k] = "This field is required";
     });
+    if (!/^\d{12}$/.test(f.personal_account_number.trim())) {
+      errs["personal_account_number"] = "Personal Account Number must be exactly 12 digits (numbers only).";
+    }
     setErrors(errs);
     setServerError("");
     if (Object.keys(errs).length) return;
@@ -203,12 +206,20 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
     }
   }
 
-  const field = (k: keyof typeof f, label: string, opts: { optional?: boolean; note?: string; readOnly?: boolean } = {}) => (
+  const field = (k: keyof typeof f, label: string, opts: { optional?: boolean; note?: string; readOnly?: boolean; numeric?: boolean } = {}) => (
     <div className="space-y-1.5">
       <Label htmlFor={k}>
         {label} {opts.optional ? <span className="font-normal text-muted-foreground">(optional)</span> : <span className="text-destructive">*</span>}
       </Label>
-      <Input id={k} value={f[k]} readOnly={opts.readOnly} className={opts.readOnly ? "bg-muted" : ""} onChange={(e) => set(k)(e.target.value)} aria-invalid={!!errors[k]} />
+      <Input
+        id={k}
+        value={f[k]}
+        readOnly={opts.readOnly}
+        className={opts.readOnly ? "bg-muted" : ""}
+        inputMode={opts.numeric ? "numeric" : undefined}
+        onChange={(e) => set(k)(opts.numeric ? e.target.value.replace(/\D/g, "").slice(0, 12) : e.target.value)}
+        aria-invalid={!!errors[k]}
+      />
       {opts.note && <p className="text-sm font-medium text-accent-foreground">{opts.note}</p>}
       {errors[k] && <p className="text-sm text-destructive">{errors[k]}</p>}
     </div>
@@ -227,6 +238,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
           {field("surname", "Surname")}
           {field("personal_account_number", "Personal Account Number", {
             note: "Personal Account Number must be taken from the University portal, NOT from the bank.",
+            numeric: true,
           })}
           {field("reg_number", "Registration Number")}
           <div className="space-y-1.5">
@@ -234,7 +246,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
             <Select value={f.year_of_study} onValueChange={set("year_of_study")}>
               <SelectTrigger aria-invalid={!!errors["year_of_study"]}><SelectValue placeholder="Select year" /></SelectTrigger>
               <SelectContent>
-                {["1", "2", "3", "4", "5", "6"].map((y) => <SelectItem key={y} value={`Year ${y}`}>Year {y}</SelectItem>)}
+                {["1", "2", "3", "4", "5"].map((y) => <SelectItem key={y} value={`Year ${y}`}>Year {y}</SelectItem>)}
               </SelectContent>
             </Select>
             {errors["year_of_study"] && <p className="text-sm text-destructive">{errors["year_of_study"]}</p>}
