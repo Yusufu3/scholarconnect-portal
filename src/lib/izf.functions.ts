@@ -1,10 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { nameSimilarity, MATCH_THRESHOLD } from "./fuzzy";
-import { getServerSupabase } from "./server-supabase";
 const sess = () => import("./admin-session.server");
 const requireAdmin = async (token?: string) => (await sess()).requireAdmin(token);
 const tok = z.string().min(10).max(500);
+
+async function db() {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  return supabaseAdmin;
+}
 
 function logServerError(context: string, error: unknown) {
   console.error(`[IZF] ${context}`, error);
@@ -17,7 +21,7 @@ const normReg = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 export const matchStudent = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ name: z.string().trim().min(2).max(120) }).parse(d))
   .handler(async ({ data }) => {
-    const sb = getServerSupabase();
+    const sb = await db();
     const { data: rows, error } = await sb
       .from("eligible_students")
       .select("id, full_name, programme, registrations(id)");
