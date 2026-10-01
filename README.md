@@ -58,7 +58,8 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ### Server only
 - `SUPABASE_URL` — Supabase project URL used by server-side code.
-- `SUPABASE_SERVICE_ROLE_KEY` — server-side Supabase service-role key. Never expose it to browser code or commit it.
+- `SUPABASE_SECRET_KEY` — preferred server-side Supabase secret key. Never expose it to browser code or commit it.
+- `SUPABASE_SERVICE_ROLE_KEY` — legacy server-side service-role key supported as a fallback. Never expose it to browser code or commit it.
 - `SESSION_SECRET` — secret used to sign admin session tokens. Never expose it to browser code or commit it.
 - `IZF_ADMIN_PASS` — admin password used only by the server. Never expose it to browser code or commit it.
 
