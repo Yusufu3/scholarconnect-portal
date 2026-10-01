@@ -246,7 +246,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
             <Select value={f.year_of_study} onValueChange={set("year_of_study")}>
               <SelectTrigger aria-invalid={!!errors["year_of_study"]}><SelectValue placeholder="Select year" /></SelectTrigger>
               <SelectContent>
-                {["1", "2", "3", "4", "5", "6"].map((y) => <SelectItem key={y} value={`Year ${y}`}>Year {y}</SelectItem>)}
+                {["1", "2", "3", "4", "5"].map((y) => <SelectItem key={y} value={`Year ${y}`}>Year {y}</SelectItem>)}
               </SelectContent>
             </Select>
             {errors["year_of_study"] && <p className="text-sm text-destructive">{errors["year_of_study"]}</p>}
