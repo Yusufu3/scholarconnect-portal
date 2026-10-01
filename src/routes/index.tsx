@@ -185,9 +185,12 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    (["first_name", "surname", "personal_account_number", "reg_number", "year_of_study", "programme"] as const).forEach((k) => {
+    (["first_name", "surname", "reg_number", "year_of_study", "programme"] as const).forEach((k) => {
       if (!f[k].trim()) errs[k] = "This field is required";
     });
+    if (!/^\d{12}$/.test(f.personal_account_number.trim())) {
+      errs.personal_account_number = "Personal Account Number must be exactly 12 digits (numbers only).";
+    }
     setErrors(errs);
     setServerError("");
     if (Object.keys(errs).length) return;
