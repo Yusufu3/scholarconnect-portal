@@ -6,8 +6,11 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 const TTL_MS = 8 * 60 * 60 * 1000;
 
 function getSessionSecret() {
-  const secret = process.env["SESSION_SECRET"];
-  if (!secret) throw new Error("SESSION_SECRET is not configured on the server.");
+  const secret =
+    process.env["SESSION_SECRET"] ||
+    process.env["SUPABASE_SECRET_KEY"] ||
+    process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  if (!secret) throw new Error("No server signing secret is configured.");
   return secret;
 }
 
