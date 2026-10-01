@@ -217,7 +217,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
         readOnly={opts.readOnly}
         className={opts.readOnly ? "bg-muted" : ""}
         inputMode={opts.numeric ? "numeric" : undefined}
-        onChange={(e) => set(k)(e.target.value.replace(/\D/g, "").slice(0, 12))}
+        onChange={(e) => set(k)(opts.numeric ? e.target.value.replace(/\D/g, "").slice(0, 12) : e.target.value)}
         aria-invalid={!!errors[k]}
       />
       {opts.note && <p className="text-sm font-medium text-accent-foreground">{opts.note}</p>}
