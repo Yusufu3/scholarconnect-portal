@@ -5,8 +5,14 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 // browsers block third-party cookies.
 const TTL_MS = 8 * 60 * 60 * 1000;
 
+function getSessionSecret() {
+  const secret = process.env["SESSION_SECRET"];
+  if (!secret) throw new Error("SESSION_SECRET is not configured on the server.");
+  return secret;
+}
+
 function sign(payload: string) {
-  return createHmac("sha256", process.env["SESSION_SECRET"]!).update(payload).digest("base64url");
+  return createHmac("sha256", getSessionSecret()).update(payload).digest("base64url");
 }
 
 export function issueAdminToken() {
