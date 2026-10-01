@@ -189,7 +189,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
       if (!f[k].trim()) errs[k] = "This field is required";
     });
     if (!/^\d{12}$/.test(f.personal_account_number.trim())) {
-      errs.personal_account_number = "Personal Account Number must be exactly 12 digits (numbers only).";
+      errs["personal_account_number"] = "Personal Account Number must be exactly 12 digits (numbers only).";
     }
     setErrors(errs);
     setServerError("");
