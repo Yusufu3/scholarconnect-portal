@@ -63,7 +63,7 @@ function Login() {
   const login = useServerFn(adminLogin);
   const qc = useQueryClient();
   const [pw, setPw] = useState("");
-  const [err, setErr] = useState(false);
+  const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   return (
     <main className="mx-auto max-w-sm px-4 py-16">
@@ -84,9 +84,9 @@ function Login() {
                   window.sessionStorage.setItem(TOKEN_KEY, r.token);
                   qc.setQueryData(["admin-status"], { admin: true });
                   setPw("");
-                } else setErr(true);
+                } else setErr(r.error ?? "Incorrect password.");
               } catch {
-                toast.error("Login failed — please try again.");
+                setErr("Login failed — please try again.");
               } finally {
                 setBusy(false);
               }
@@ -94,8 +94,8 @@ function Login() {
           >
             <div className="space-y-2">
               <Label htmlFor="pw">Password</Label>
-              <Input id="pw" type="password" autoComplete="current-password" value={pw} onChange={(e) => { setPw(e.target.value); setErr(false); }} />
-              {err && <p className="text-sm text-destructive">Incorrect password.</p>}
+              <Input id="pw" type="password" autoComplete="current-password" value={pw} onChange={(e) => { setPw(e.target.value); setErr(""); }} />
+              {err && <p className="text-sm text-destructive">{err}</p>}
             </div>
             <Button type="submit" className="w-full" disabled={!pw || busy}>{busy ? "Checking…" : "Log in"}</Button>
           </form>
