@@ -49,6 +49,8 @@ const regSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{12}$/, "Personal Account Number must be exactly 12 digits (numbers only)."),
+  reg_number: z.string().trim().min(3, "Required").max(40),
+  year_of_study: z.string().trim().min(1, "Required").max(20),
   programme: z.string().trim().min(2, "Required").max(150),
 });
 
