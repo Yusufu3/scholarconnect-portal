@@ -10,6 +10,10 @@ async function db() {
   return supabaseAdmin;
 }
 
+function logServerError(context: string, error: unknown) {
+  console.error(`[IZF] ${context}`, error);
+}
+
 const normReg = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 
 // ---------- Student ----------
@@ -21,7 +25,10 @@ export const matchStudent = createServerFn({ method: "POST" })
     const { data: rows, error } = await sb
       .from("eligible_students")
       .select("id, full_name, programme, registrations(id)");
-    if (error) throw new Error("Could not search the list");
+    if (error) {
+      logServerError("matchStudent database query failed", error);
+      throw new Error("Could not search the list");
+    }
     const scored = (rows ?? [])
       .map((r) => ({
         id: r.id,
@@ -58,20 +65,28 @@ export const submitRegistration = createServerFn({ method: "POST" })
   .inputValidator((d) => regSchema.parse(d))
   .handler(async ({ data }) => {
     const sb = await db();
-    const { data: st } = await sb
+    const { data: st, error: studentLookupError } = await sb
       .from("eligible_students")
       .select("id, reg_number, programme")
       .eq("id", data.eligible_student_id)
       .maybeSingle();
+    if (studentLookupError) {
+      logServerError("submitRegistration eligible student lookup failed", studentLookupError);
+      return { ok: false as const, error: "Could not verify your registration. Please try again." };
+    }
     if (!st) return { ok: false as const, error: "Student is not on the eligible list." };
     if (st.reg_number && normReg(st.reg_number) !== normReg(data.reg_number)) {
       return { ok: false as const, error: "Registration Number does not match our records." };
     }
-    const { data: existing } = await sb
+    const { data: existing, error: existingLookupError } = await sb
       .from("registrations")
       .select("id")
       .eq("eligible_student_id", st.id)
       .maybeSingle();
+    if (existingLookupError) {
+      logServerError("submitRegistration duplicate check failed", existingLookupError);
+      return { ok: false as const, error: "Could not verify your submission. Please try again." };
+    }
     if (existing) return { ok: false as const, error: "This student has already submitted." };
     const { error } = await sb.from("registrations").insert({
       ...data,
@@ -80,6 +95,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
       programme: st.programme || data.programme,
     });
     if (error) {
+      logServerError("submitRegistration insert failed", error);
       if (error.code === "23505") return { ok: false as const, error: "This student has already submitted." };
       return { ok: false as const, error: "Could not save. Please try again." };
     }
