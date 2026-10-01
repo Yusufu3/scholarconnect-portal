@@ -230,6 +230,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match; onBack:
           {field("surname", "Surname")}
           {field("personal_account_number", "Personal Account Number", {
             note: "Personal Account Number must be taken from the University portal, NOT from the bank.",
+            numeric: true,
           })}
           {field("reg_number", "Registration Number")}
           <div className="space-y-1.5">
