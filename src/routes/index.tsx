@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
 });
 
 type Match = { id: string; full_name: string; programme: string | null; registered: boolean };
-const WHATSAPP = "https://chat.whatsapp.com/FkxeuK5ULvyDfPkliBcErU";
+const WHATSAPP = "https://chat.whatsapp.com/KYDaapRb9tzKIaF6TVTa3V";
 
 function StudentPage() {
   const [step, setStep] = useState<"search" | "confirm" | "form" | "done">("search");
