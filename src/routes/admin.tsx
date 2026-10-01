@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminDeleteRegistration, adminResetRegistration,
+  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminResetRegistration,
 } from "@/lib/izf.functions";
 import { downloadExcel, downloadPdf, type Layout } from "@/lib/export";
 
