@@ -22,6 +22,13 @@
       "when": 1790783558480,
       "tag": "0002_remove_test_submission_2",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790820762464,
+      "tag": "0003_izf_rpc_layer",
+      "breakpoints": true
     }
   ]
 }
