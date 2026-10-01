@@ -1,14 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { nameSimilarity, MATCH_THRESHOLD } from "./fuzzy";
+import { getServerSupabase } from "./server-supabase";
 const sess = () => import("./admin-session.server");
 const requireAdmin = async (token?: string) => (await sess()).requireAdmin(token);
 const tok = z.string().min(10).max(500);
-
-async function db() {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin;
-}
 
 function logServerError(context: string, error: unknown) {
   console.error(`[IZF] ${context}`, error);
@@ -21,7 +17,7 @@ const normReg = (s: string) => s.replace(/\s+/g, "").toUpperCase();
 export const matchStudent = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ name: z.string().trim().min(2).max(120) }).parse(d))
   .handler(async ({ data }) => {
-    const sb = await db();
+    const sb = getServerSupabase();
     const { data: rows, error } = await sb
       .from("eligible_students")
       .select("id, full_name, programme, registrations(id)");
@@ -107,11 +103,21 @@ export const submitRegistration = createServerFn({ method: "POST" })
 export const adminLogin = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ password: z.string().min(1).max(200) }).parse(d))
   .handler(async ({ data }) => {
-    const expected = process.env["IZF_ADMIN_PASS"];
-    const m = await sess();
-    if (!expected) throw new Error("Admin password is not configured");
-    if (!m.passwordMatches(data.password, expected)) return { ok: false as const, token: null };
-    return { ok: true as const, token: m.issueAdminToken() };
+    try {
+      const expected = process.env["IZF_ADMIN_PASS"];
+      if (!expected) {
+        logServerError("adminLogin configuration failure", new Error("IZF_ADMIN_PASS is missing"));
+        return { ok: false as const, token: null, error: "Admin login is not configured on the server." };
+      }
+      const m = await sess();
+      if (!m.passwordMatches(data.password, expected)) {
+        return { ok: false as const, token: null, error: "Incorrect password." };
+      }
+      return { ok: true as const, token: m.issueAdminToken(), error: null };
+    } catch (error) {
+      logServerError("adminLogin server failure", error);
+      return { ok: false as const, token: null, error: "Admin login is temporarily unavailable." };
+    }
   });
 
 export const adminStatus = createServerFn({ method: "POST" })
