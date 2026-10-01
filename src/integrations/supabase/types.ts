@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_config: {
+        Row: {
+          id: number
+          password_hash: string
+        }
+        Insert: {
+          id?: number
+          password_hash: string
+        }
+        Update: {
+          id?: number
+          password_hash?: string
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          expires_at: string
+          token_hash: string
+        }
+        Insert: {
+          expires_at: string
+          token_hash: string
+        }
+        Update: {
+          expires_at?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       eligible_students: {
         Row: {
           created_at: string
@@ -99,7 +129,63 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      izf_admin_create_student: {
+        Args: {
+          _full_name: string
+          _institution: string
+          _programme: string
+          _reg_number: string
+          _sn: number
+          _token: string
+        }
+        Returns: undefined
+      }
+      izf_admin_delete_registration: {
+        Args: { _id: string; _token: string }
+        Returns: undefined
+      }
+      izf_admin_delete_student: {
+        Args: { _id: string; _token: string }
+        Returns: undefined
+      }
+      izf_admin_list: { Args: { _token: string }; Returns: Json }
+      izf_admin_login: { Args: { _password: string }; Returns: string }
+      izf_admin_status: { Args: { _token: string }; Returns: boolean }
+      izf_admin_update_student: {
+        Args: {
+          _full_name: string
+          _id: string
+          _institution: string
+          _programme: string
+          _reg_number: string
+          _sn: number
+          _token: string
+        }
+        Returns: undefined
+      }
+      izf_candidates: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+          programme: string
+          registered: boolean
+        }[]
+      }
+      izf_check_admin: { Args: { _token: string }; Returns: undefined }
+      izf_submit_registration: {
+        Args: {
+          _eligible_student_id: string
+          _first_name: string
+          _middle_name: string
+          _pan: string
+          _programme: string
+          _reg_number: string
+          _surname: string
+          _year: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
