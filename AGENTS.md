@@ -10,6 +10,6 @@
 <!-- LOVABLE:END -->
 
 ## IZF decisions
-- All data access goes through server functions using the service client; tables have RLS on with no public policies (why: students/admin never touch the database directly).
-- Admin auth: shared password (IZF_ADMIN_PASS) checked server-side, returns an HMAC-signed 8h token kept in sessionStorage and sent with every admin server call (why: iframe preview blocks cookies, which broke cookie sessions).
+- All data access goes through SECURITY DEFINER izf_* database procedures called with the publishable key (src/lib/public-db.ts); tables have RLS on with no policies (why: app must run on Vercel where no private keys exist).
+- Admin auth: bcrypt password hash in admin_config, izf_admin_login returns a random 8h token (stored hashed in admin_sessions), kept in sessionStorage and sent with every admin call (why: iframe blocks cookies; no host secrets needed).
 - Name matching is deterministic OSA/Damerau-Levenshtein in src/lib/fuzzy.ts, threshold 0.72 (why: user forbade AI matching).
