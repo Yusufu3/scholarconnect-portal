@@ -316,13 +316,40 @@ function SubmissionsSection({ students }: { students: Student[] }) {
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CardTitle className="font-serif">Submissions</CardTitle>
-        <div className="flex gap-2">
+        <div>
+          <CardTitle className="font-serif">Submissions</CardTitle>
+          <CardDescription>Manage submitted and pending scholarship registrations.</CardDescription>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <Input className="sm:w-56" placeholder="Search…" value={term} onChange={(e) => setTerm(e.target.value)} />
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="submitted">Submitted</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="all">All</SelectItem></SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const pending = students.filter((s) => !s.registration);
+              const columns = ["No.", "S/N", "Official Name", "Institution", "Registration No.", "Programme", "Status"];
+              const rows = pending.map((s, i) => [
+                String(i + 1),
+                String(s.sn ?? ""),
+                s.full_name,
+                s.institution,
+                s.reg_number ?? "",
+                s.programme ?? "",
+                "Pending",
+              ]);
+              try {
+                await downloadExcel("Pending Scholarship Students", columns, rows);
+                toast.success(`Downloaded ${pending.length} pending students.`);
+              } catch {
+                toast.error("Could not download pending students.");
+              }
+            }}
+          >
+            <Download className="mr-2 h-4 w-4" /> Download Pending
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto p-0 sm:p-6 sm:pt-0">
