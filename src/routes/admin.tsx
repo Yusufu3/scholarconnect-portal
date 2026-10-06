@@ -110,14 +110,16 @@ function Dashboard() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ["students"], queryFn: () => list({ data: { token: getToken() } }) });
   const students = q.data ?? [];
-  const submitted = students.filter((s) => s.registration).length;
+  const submitted = students.filter((s) => s.registration && !s.not_yet_eligible).length;
+  const notYetEligible = students.filter((s) => s.not_yet_eligible).length;
+  const pending = students.filter((s) => !s.registration && !s.not_yet_eligible).length;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-sm text-muted-foreground">{students.length} eligible · {submitted} submitted · {students.length - submitted} pending</p>
+          <p className="text-sm text-muted-foreground">{students.length - notYetEligible} eligible · {submitted} submitted · {pending} pending · {notYetEligible} not yet eligible</p>
         </div>
         <Button variant="outline" onClick={() => { window.sessionStorage.removeItem(TOKEN_KEY); qc.clear(); qc.setQueryData(["admin-status"], { admin: false }); }}>
           <LogOut className="mr-2 h-4 w-4" /> Log out
@@ -152,6 +154,7 @@ function useSearch(students: Student[], term: string) {
 }
 
 function StatusBadge({ s }: { s: Student }) {
+  if (s.not_yet_eligible) return <Badge variant="outline">Not Yet Eligible</Badge>;
   return s.registration ? <Badge className="bg-success text-success-foreground hover:bg-success">Submitted</Badge> : <Badge variant="secondary">Pending</Badge>;
 }
 
@@ -287,7 +290,7 @@ function ViewDialog({ s, onClose }: { s: Student; onClose: () => void }) {
     ["Official name", s.full_name], ["S/N", String(s.sn ?? "—")], ["Institution", s.institution], ["Status", r ? "Submitted" : "Pending"],
     ...(r ? ([
       ["First Name", r.first_name], ["Middle Name", r.middle_name || "—"], ["Surname", r.surname],
-      ["Personal Account Number", r.personal_account_number], ["Registration Number", r.reg_number],
+      ["Personal Account Number", r.personal_account_number], ["Registration Number", r.reg_number], ["Bank Account Number", r.bank_account_number || "—"], ["Bank Account Name", r.bank_account_name || "—"],
       ["Year of Study", r.year_of_study], ["Programme", r.programme], ["Submitted", new Date(r.created_at).toLocaleString()],
     ] as [string, string][]) : []),
   ];
@@ -312,7 +315,12 @@ function SubmissionsSection({ students }: { students: Student[] }) {
   const qc = useQueryClient();
   const [resetBusy, setResetBusy] = useState(false);
   const searched = useSearch(students, term);
-  const rows = searched.filter((s) => filter === "all" || (filter === "submitted" ? s.registration : !s.registration));
+  const rows = searched.filter((s) => {
+    if (filter === "all") return true;
+    if (filter === "submitted") return !!s.registration && !s.not_yet_eligible;
+    if (filter === "pending") return !s.registration && !s.not_yet_eligible;
+    return true;
+  });
   return (
     <Card>
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -416,7 +424,9 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
   { key: "year", label: "Year of Study", get: (s) => s.registration?.year_of_study ?? "" },
   { key: "programme", label: "Programme", get: (s) => s.registration?.programme ?? s.programme ?? "" },
   { key: "institution", label: "Institution", get: (s) => s.institution },
-  { key: "status", label: "Status", get: (s) => (s.registration ? "Submitted" : "Pending") },
+  { key: "bank", label: "Bank Account No.", get: (s) => s.registration?.bank_account_number ?? "" },
+  { key: "bankname", label: "Bank Account Name", get: (s) => s.registration?.bank_account_name ?? "" },
+  { key: "status", label: "Status", get: (s) => s.not_yet_eligible ? "Not Yet Eligible" : (s.registration ? "Submitted" : "Pending") },
   { key: "date", label: "Submitted On", get: (s) => (s.registration ? new Date(s.registration.created_at).toLocaleDateString() : "") },
 ];
 
