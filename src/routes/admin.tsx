@@ -319,6 +319,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
     if (filter === "all") return true;
     if (filter === "submitted") return !!s.registration && !s.not_yet_eligible;
     if (filter === "pending") return !s.registration && !s.not_yet_eligible;
+    if (filter === "not_eligible") return !!s.not_yet_eligible;
     return true;
   });
   return (
@@ -332,12 +333,12 @@ function SubmissionsSection({ students }: { students: Student[] }) {
           <Input className="sm:w-56" placeholder="Search…" value={term} onChange={(e) => setTerm(e.target.value)} />
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="submitted">Submitted</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="all">All</SelectItem></SelectContent>
+            <SelectContent><SelectItem value="submitted">Submitted</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="not_eligible">Not Yet Eligible</SelectItem><SelectItem value="all">All</SelectItem></SelectContent>
           </Select>
           <Button
             variant="outline"
             onClick={async () => {
-              const pending = students.filter((s) => !s.registration);
+              const pending = students.filter((s) => !s.registration && !s.not_yet_eligible);
               const columns = ["No.", "S/N", "Official Name", "Institution", "Registration No.", "Programme", "Status"];
               const rows = pending.map((s, i) => [
                 String(i + 1),
