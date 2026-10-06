@@ -47,17 +47,16 @@ export const matchStudent = createServerFn({ method: "POST" })
   });
 
 const regSchema = z.object({
-  eligible_student_id: z.string().uuid(),
+  eligible_student_id: z.string().uuid().nullable(),
   first_name: z.string().trim().min(1, "Required").max(60),
   middle_name: z.string().trim().max(60).optional().default(""),
   surname: z.string().trim().min(1, "Required").max(60),
-  personal_account_number: z
-    .string()
-    .trim()
-    .regex(/^\d{12}$/, "Personal Account Number must be exactly 12 digits (numbers only)."),
-  reg_number: z.string().trim().min(3, "Required").max(40),
+  personal_account_number: z.string().trim().regex(/^\d{12}$/, "Personal Account Number must be exactly 12 digits (numbers only)."),
+  reg_number: z.string().trim().min(1, "Required").max(40),
   year_of_study: z.string().trim().min(1, "Required").max(20),
   programme: z.string().trim().min(2, "Required").max(150),
+  bank_account_number: z.string().trim().min(1, "Required").max(80),
+  bank_account_name: z.string().trim().min(1, "Required").max(120),
 });
 
 export const submitRegistration = createServerFn({ method: "POST" })
@@ -72,14 +71,36 @@ export const submitRegistration = createServerFn({ method: "POST" })
       _reg_number: data.reg_number,
       _year: data.year_of_study,
       _programme: data.programme,
+      _bank_account_number: data.bank_account_number,
+      _bank_account_name: data.bank_account_name,
     });
     if (error) {
       logServerError("submitRegistration failed", error);
       return { ok: false as const, error: "Could not save. Please try again." };
     }
-    const r = res as { ok: boolean; error?: string };
-    if (!r?.ok) return { ok: false as const, error: r?.error || "Could not save. Please try again." };
+    const rr = res as { ok: boolean; error?: string };
+    if (!rr?.ok) return { ok: false as const, error: rr?.error || "Could not save. Please try again." };
     return { ok: true as const };
+  });
+
+export const updateBankDetails = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    eligible_student_id: z.string().uuid(),
+    bank_account_number: z.string().trim().min(1).max(80),
+    bank_account_name: z.string().trim().min(1).max(120),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { data: res, error } = await publicDb().rpc("izf_update_bank_details", {
+      _eligible_student_id: data.eligible_student_id,
+      _bank_account_number: data.bank_account_number,
+      _bank_account_name: data.bank_account_name,
+    });
+    if (error) {
+      logServerError("updateBankDetails failed", error);
+      return { ok: false as const, error: "Could not save bank details. Please try again." };
+    }
+    const rr = res as { ok: boolean; error?: string };
+    return rr?.ok ? { ok: true as const } : { ok: false as const, error: rr?.error || "Could not save bank details." };
   });
 
 // ---------- Admin ----------
@@ -106,9 +127,10 @@ export const adminStatus = createServerFn({ method: "POST" })
   });
 
 type Registration = {
-  id: string; eligible_student_id: string; first_name: string; middle_name: string | null;
+  id: string; eligible_student_id: string | null; first_name: string; middle_name: string | null;
   surname: string; personal_account_number: string; reg_number: string; year_of_study: string;
-  programme: string; created_at: string;
+  programme: string; bank_account_number: string | null; bank_account_name: string | null;
+  eligibility_status: "eligible" | "not_yet_eligible"; created_at: string;
 };
 type Student = {
   id: string; sn: number | null; full_name: string; reg_number: string | null; programme: string | null;
@@ -120,10 +142,8 @@ export const adminListStudents = createServerFn({ method: "POST" })
   .handler(async ({ data: { token } }) => {
     const { data, error } = await publicDb().rpc("izf_admin_list", { _token: token });
     adminError(error);
-    return ((data ?? []) as unknown as (Student & { registration: Registration | null })[]).map((r) => ({
-      ...r,
-      registration: r.registration ?? null,
-    }));
+    const payload = (data ?? {}) as { eligible?: unknown[]; not_yet_eligible?: unknown[] };
+    return [...(payload.eligible ?? []), ...(payload.not_yet_eligible ?? [])] as (Student & { registration: Registration | null; not_yet_eligible?: boolean })[];
   });
 
 const studentSchema = z.object({
