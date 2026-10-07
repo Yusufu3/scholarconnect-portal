@@ -290,7 +290,7 @@ function ViewDialog({ s, onClose }: { s: Student; onClose: () => void }) {
     ["Official name", s.full_name], ["S/N", String(s.sn ?? "—")], ["Institution", s.institution], ["Status", r ? "Submitted" : "Pending"],
     ...(r ? ([
       ["First Name", r.first_name], ["Middle Name", r.middle_name || "—"], ["Surname", r.surname],
-      ["Personal Account Number", r.personal_account_number], ["Registration Number", r.reg_number], ["Bank Account Number", r.bank_account_number || "—"], ["Bank Account Name", r.bank_account_name || "—"],
+      ["Personal Account Number", r.personal_account_number], ["Registration Number", r.reg_number], ["Bank Name", r.bank_name || "—"], ["Account Name", r.bank_account_name || "—"], ["Account Number", r.bank_account_number || "—"],
       ["Year of Study", r.year_of_study], ["Programme", r.programme], ["Submitted", new Date(r.created_at).toLocaleString()],
     ] as [string, string][]) : []),
   ];
@@ -425,8 +425,9 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
   { key: "year", label: "Year of Study", get: (s) => s.registration?.year_of_study ?? "" },
   { key: "programme", label: "Programme", get: (s) => s.registration?.programme ?? s.programme ?? "" },
   { key: "institution", label: "Institution", get: (s) => s.institution },
-  { key: "bank", label: "Bank Account No.", get: (s) => s.registration?.bank_account_number ?? "" },
-  { key: "bankname", label: "Bank Account Name", get: (s) => s.registration?.bank_account_name ?? "" },
+  { key: "bank", label: "Account Number", get: (s) => s.registration?.bank_account_number ?? "" },
+  { key: "bankname", label: "Bank Name", get: (s) => s.registration?.bank_name ?? "" },
+  { key: "accountname", label: "Account Name", get: (s) => s.registration?.bank_account_name ?? "" },
   { key: "status", label: "Status", get: (s) => s.not_yet_eligible ? "Not Yet Eligible" : (s.registration ? "Submitted" : "Pending") },
   { key: "date", label: "Submitted On", get: (s) => (s.registration ? new Date(s.registration.created_at).toLocaleDateString() : "") },
 ];
