@@ -98,7 +98,6 @@ export const updateBankDetails = createServerFn({ method: "POST" })
       _bank_name: data.bank_name,
       _bank_account_name: data.bank_account_name,
       _bank_account_number: data.bank_account_number,
-      _bank_account_name: data.bank_account_name,
     });
     if (error) {
       logServerError("updateBankDetails failed", error);
