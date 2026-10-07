@@ -95,7 +95,7 @@ export const updateBankDetails = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     eligible_student_id: z.string().uuid(),
     bank_name: z.string().trim().min(1).max(120),
-    bank_account_number: z.string().trim().regex(/^\\d+$/, "Account Number must contain digits only").max(30),
+    bank_account_number: z.string().trim().regex(/^\d+$/, "Account Number must contain digits only").max(30),
     bank_account_name: z.string().trim().min(1).max(120),
   }).parse(d))
   .handler(async ({ data }) => {
