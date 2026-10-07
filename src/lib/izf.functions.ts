@@ -64,69 +64,29 @@ export const submitRegistration = createServerFn({ method: "POST" })
   .inputValidator((d) => regSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-      if (data.eligible_student_id) {
-        const { data: student, error: studentError } = await supabaseAdmin
-          .from("eligible_students")
-          .select("id, reg_number, programme")
-          .eq("id", data.eligible_student_id)
-          .maybeSingle();
-
-        if (studentError) throw studentError;
-        if (!student) return { ok: false as const, error: "Student record not found." };
-
-        if (student.reg_number &&
-            student.reg_number.replace(/\\s+/g, "").toUpperCase() !== data.reg_number.replace(/\\s+/g, "").toUpperCase()) {
-          return { ok: false as const, error: "Registration Number does not match our records." };
-        }
-
-        const { data: existing } = await supabaseAdmin
-          .from("registrations")
-          .select("id")
-          .eq("eligible_student_id", data.eligible_student_id)
-          .maybeSingle();
-
-        if (existing) return { ok: false as const, error: "This student has already submitted." };
-
-        const { error } = await supabaseAdmin.from("registrations").insert({
-          eligible_student_id: data.eligible_student_id,
-          first_name: data.first_name,
-          middle_name: data.middle_name || null,
-          surname: data.surname,
-          personal_account_number: data.personal_account_number,
-          reg_number: data.reg_number,
-          year_of_study: data.year_of_study,
-          programme: student.programme || data.programme,
-          bank_name: data.bank_name,
-          bank_account_name: data.bank_account_name,
-          bank_account_number: data.bank_account_number,
-          eligibility_status: "eligible",
-        } as any);
-
-        if (error) throw error;
-        return { ok: true as const };
+      const db = publicDb();
+      const { data: result, error } = await db.rpc("izf_submit_registration", {
+        _eligible_student_id: data.eligible_student_id,
+        _first_name: data.first_name,
+        _middle_name: data.middle_name || "",
+        _surname: data.surname,
+        _pan: data.personal_account_number,
+        _reg_number: data.reg_number,
+        _year: data.year_of_study,
+        _programme: data.programme,
+        _bank_name: data.bank_name,
+        _bank_account_name: data.bank_account_name,
+        _bank_account_number: data.bank_account_number,
+      });
+      if (error) {
+        logServerError("submitRegistration RPC failed", error);
+        return { ok: false as const, error: error.message || "Could not save. Please try again." };
       }
-
-      const { error } = await supabaseAdmin.from("registrations").insert({
-        eligible_student_id: null,
-        first_name: data.first_name,
-        middle_name: data.middle_name || null,
-        surname: data.surname,
-        personal_account_number: data.personal_account_number,
-        reg_number: data.reg_number,
-        year_of_study: data.year_of_study,
-        programme: data.programme,
-        bank_name: data.bank_name,
-        bank_account_name: data.bank_account_name,
-        bank_account_number: data.bank_account_number,
-        eligibility_status: "not_yet_eligible",
-      } as any);
-
-      if (error) throw error;
+      const payload = result as { ok?: boolean; error?: string } | null;
+      if (!payload?.ok) return { ok: false as const, error: payload?.error || "Could not save. Please try again." };
       return { ok: true as const };
     } catch (error: any) {
-      logServerError("submitRegistration direct save failed", error);
+      logServerError("submitRegistration failed", error);
       return { ok: false as const, error: error?.message || "Could not save. Please try again." };
     }
   });
@@ -140,32 +100,21 @@ export const updateBankDetails = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }) => {
     try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-      const { data: existing, error: lookupError } = await supabaseAdmin
-        .from("registrations")
-        .select("id")
-        .eq("eligible_student_id", data.eligible_student_id)
-        .maybeSingle();
-
-      if (lookupError) throw lookupError;
-      if (!existing) {
-        return { ok: false as const, error: "Submitted student record not found." };
+      const { data: result, error } = await publicDb().rpc("izf_update_bank_details", {
+        _eligible_student_id: data.eligible_student_id,
+        _bank_name: data.bank_name,
+        _bank_account_name: data.bank_account_name,
+        _bank_account_number: data.bank_account_number,
+      });
+      if (error) {
+        logServerError("updateBankDetails RPC failed", error);
+        return { ok: false as const, error: error.message || "Could not save bank details. Please try again." };
       }
-
-      const { error } = await supabaseAdmin
-        .from("registrations")
-        .update({
-          bank_name: data.bank_name,
-          bank_account_name: data.bank_account_name,
-          bank_account_number: data.bank_account_number,
-        } as any)
-        .eq("eligible_student_id", data.eligible_student_id);
-
-      if (error) throw error;
+      const payload = result as { ok?: boolean; error?: string } | null;
+      if (!payload?.ok) return { ok: false as const, error: payload?.error || "Could not save bank details. Please try again." };
       return { ok: true as const };
     } catch (error: any) {
-      logServerError("updateBankDetails direct save failed", error);
+      logServerError("updateBankDetails failed", error);
       return { ok: false as const, error: error?.message || "Could not save bank details. Please try again." };
     }
   });
