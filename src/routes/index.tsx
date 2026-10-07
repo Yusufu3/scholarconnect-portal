@@ -192,7 +192,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
     <div className="space-y-1.5">
       <Label htmlFor={k}>{label} {opts.optional ? <span className="font-normal text-muted-foreground">(optional)</span> : <span className="text-destructive">*</span>}</Label>
       <Input id={k} value={f[k]} readOnly={opts.readOnly} className={opts.readOnly ? "bg-muted" : ""} inputMode={opts.numeric ? "numeric" : undefined}
-        onChange={(e) => set(k)(opts.numeric ? e.target.value.replace(/\D/g, "").slice(0, 12) : e.target.value)} aria-invalid={!!errors[k]} />
+        onChange={(e) => set(k)(opts.numeric ? e.target.value.replace(/\D/g, "") : e.target.value)} aria-invalid={!!errors[k]} />
       {opts.note && <p className="text-sm font-medium text-accent-foreground">{opts.note}</p>}
       {errors[k] && <p className="text-sm text-destructive">{errors[k]}</p>}
     </div>
