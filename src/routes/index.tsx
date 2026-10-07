@@ -168,13 +168,13 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!f.bank_name.trim()) errs.bank_name = "This field is required";
-    if (!f.bank_account_number.trim()) errs.bank_account_number = "This field is required";
-    else if (!/^\d+$/.test(f.bank_account_number.trim())) errs.bank_account_number = "Account Number must contain digits only";
-    if (!f.bank_account_name.trim()) errs.bank_account_name = "This field is required";
+    if (!f.bank_name.trim()) errs["bank_name"] = "This field is required";
+    if (!f.bank_account_number.trim()) errs["bank_account_number"] = "This field is required";
+    else if (!/^\d+$/.test(f.bank_account_number.trim())) errs["bank_account_number"] = "Account Number must contain digits only";
+    if (!f.bank_account_name.trim()) errs["bank_account_name"] = "This field is required";
     if (!isExisting) {
       (["first_name", "surname", "reg_number", "year_of_study", "programme"] as const).forEach((k) => { if (!f[k].trim()) errs[k] = "This field is required"; });
-      if (!/^\d{12}$/.test(f.personal_account_number.trim())) errs.personal_account_number = "Personal Account Number must be exactly 12 digits (numbers only).";
+      if (!/^\d{12}$/.test(f.personal_account_number.trim())) errs["personal_account_number"] = "Personal Account Number must be exactly 12 digits (numbers only).";
     }
     setErrors(errs); setServerError("");
     if (Object.keys(errs).length) return;
