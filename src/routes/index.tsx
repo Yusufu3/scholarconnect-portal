@@ -156,7 +156,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
     first_name: parts[0] ?? "", middle_name: parts.length > 2 ? parts.slice(1, -1).join(" ") : "",
     surname: parts.length > 1 ? parts[parts.length - 1]! : "", personal_account_number: "",
     reg_number: "", year_of_study: "", programme: student?.programme ?? "",
-    bank_account_number: "", bank_account_name: "",
+    bank_name: "", bank_account_number: "", bank_account_name: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
@@ -168,7 +168,9 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
+    if (!f.bank_name.trim()) errs.bank_name = "This field is required";
     if (!f.bank_account_number.trim()) errs.bank_account_number = "This field is required";
+    else if (!/^\d+$/.test(f.bank_account_number.trim())) errs.bank_account_number = "Account Number must contain digits only";
     if (!f.bank_account_name.trim()) errs.bank_account_name = "This field is required";
     if (!isExisting) {
       (["first_name", "surname", "reg_number", "year_of_study", "programme"] as const).forEach((k) => { if (!f[k].trim()) errs[k] = "This field is required"; });
@@ -179,7 +181,7 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
     setSaving(true);
     try {
       const res = isExisting
-        ? await updateBank({ data: { eligible_student_id: student!.id, bank_account_number: f.bank_account_number, bank_account_name: f.bank_account_name } })
+        ? await updateBank({ data: { eligible_student_id: student!.id, bank_name: f.bank_name, bank_account_number: f.bank_account_number, bank_account_name: f.bank_account_name } })
         : await submit({ data: { ...f, eligible_student_id: student?.id ?? null } });
       if (res.ok) onDone(); else setServerError(res.error);
     } catch { setServerError("Please check your details and try again."); }
@@ -210,8 +212,9 @@ function RegistrationForm({ student, onBack, onDone }: { student: Match | null; 
           {field("year_of_study", "Year of Study")}
           {field("programme", "Programme Name", { readOnly: !!student?.programme })}
         </>}
-        {field("bank_account_number", "Bank Account Number")}
-        {field("bank_account_name", "Bank Account Name", { note: "Enter the name exactly as it appears on the bank account." })}
+        {field("bank_name", "Bank Name")}
+        {field("bank_account_name", "Account Name", { note: "Enter the name exactly as it appears on the bank account." })}
+        {field("bank_account_number", "Account Number", { numeric: true })}
         {serverError && <div className="flex gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0" /> {serverError}</div>}
         <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
           <Button type="button" variant="outline" className="flex-1" onClick={onBack}>Back</Button>
