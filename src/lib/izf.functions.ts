@@ -55,7 +55,8 @@ const regSchema = z.object({
   reg_number: z.string().trim().min(1, "Required").max(40),
   year_of_study: z.string().trim().min(1, "Required").max(20),
   programme: z.string().trim().min(2, "Required").max(150),
-  bank_account_number: z.string().trim().min(1, "Required").max(80),
+  bank_name: z.string().trim().min(1, "Required").max(120),
+  bank_account_number: z.string().trim().regex(/^\d+$/, "Account Number must contain digits only").max(30),
   bank_account_name: z.string().trim().min(1, "Required").max(120),
 });
 
@@ -71,8 +72,9 @@ export const submitRegistration = createServerFn({ method: "POST" })
       _reg_number: data.reg_number,
       _year: data.year_of_study,
       _programme: data.programme,
-      _bank_account_number: data.bank_account_number,
+      _bank_name: data.bank_name,
       _bank_account_name: data.bank_account_name,
+      _bank_account_number: data.bank_account_number,
     });
     if (error) {
       logServerError("submitRegistration failed", error);
@@ -86,12 +88,15 @@ export const submitRegistration = createServerFn({ method: "POST" })
 export const updateBankDetails = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     eligible_student_id: z.string().uuid(),
-    bank_account_number: z.string().trim().min(1).max(80),
+    bank_name: z.string().trim().min(1).max(120),
+    bank_account_number: z.string().trim().regex(/^\d+$/, "Account Number must contain digits only").max(30),
     bank_account_name: z.string().trim().min(1).max(120),
   }).parse(d))
   .handler(async ({ data }) => {
     const { data: res, error } = await publicDb().rpc("izf_update_bank_details", {
       _eligible_student_id: data.eligible_student_id,
+      _bank_name: data.bank_name,
+      _bank_account_name: data.bank_account_name,
       _bank_account_number: data.bank_account_number,
       _bank_account_name: data.bank_account_name,
     });
@@ -129,7 +134,7 @@ export const adminStatus = createServerFn({ method: "POST" })
 type Registration = {
   id: string; eligible_student_id: string | null; first_name: string; middle_name: string | null;
   surname: string; personal_account_number: string; reg_number: string; year_of_study: string;
-  programme: string; bank_account_number: string | null; bank_account_name: string | null;
+  programme: string; bank_name: string | null; bank_account_number: string | null; bank_account_name: string | null;
   eligibility_status: "eligible" | "not_yet_eligible"; created_at: string;
 };
 type Student = {
