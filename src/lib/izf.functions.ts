@@ -66,7 +66,7 @@ export const submitRegistration = createServerFn({ method: "POST" })
     try {
       const db = publicDb();
       const { data: result, error } = await db.rpc("izf_submit_registration", {
-        _eligible_student_id: data.eligible_student_id,
+        _eligible_student_id: data.eligible_student_id as string,
         _first_name: data.first_name,
         _middle_name: data.middle_name || "",
         _surname: data.surname,

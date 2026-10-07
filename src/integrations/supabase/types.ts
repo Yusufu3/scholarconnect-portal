@@ -79,8 +79,12 @@ export type Database = {
       }
       registrations: {
         Row: {
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
           created_at: string
-          eligible_student_id: string
+          eligibility_status: string
+          eligible_student_id: string | null
           first_name: string
           id: string
           middle_name: string | null
@@ -91,8 +95,12 @@ export type Database = {
           year_of_study: string
         }
         Insert: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
           created_at?: string
-          eligible_student_id: string
+          eligibility_status?: string
+          eligible_student_id?: string | null
           first_name: string
           id?: string
           middle_name?: string | null
@@ -103,8 +111,12 @@ export type Database = {
           year_of_study: string
         }
         Update: {
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
           created_at?: string
-          eligible_student_id?: string
+          eligibility_status?: string
+          eligible_student_id?: string | null
           first_name?: string
           id?: string
           middle_name?: string | null
@@ -175,6 +187,9 @@ export type Database = {
       izf_check_admin: { Args: { _token: string }; Returns: undefined }
       izf_submit_registration: {
         Args: {
+          _bank_account_name: string
+          _bank_account_number: string
+          _bank_name: string
           _eligible_student_id: string
           _first_name: string
           _middle_name: string
@@ -183,6 +198,15 @@ export type Database = {
           _reg_number: string
           _surname: string
           _year: string
+        }
+        Returns: Json
+      }
+      izf_update_bank_details: {
+        Args: {
+          _bank_account_name: string
+          _bank_account_number: string
+          _bank_name: string
+          _eligible_student_id: string
         }
         Returns: Json
       }

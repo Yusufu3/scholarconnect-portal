@@ -29,6 +29,13 @@
       "when": 1790820762464,
       "tag": "0003_izf_rpc_layer",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791348672038,
+      "tag": "0004_bank_and_not_yet_eligible",
+      "breakpoints": true
     }
   ]
 }
