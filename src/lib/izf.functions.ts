@@ -204,14 +204,14 @@ export const adminDeleteStudent = createServerFn({ method: "POST" })
 export const adminPromoteNotYetEligible = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({
     registration_id: z.string().uuid(),
-    eligible_student_id: z.string().uuid(),
+    eligible_student_id: z.string().uuid().nullable(),
     token: tok,
   }).parse(d))
   .handler(async ({ data }) => {
     const { data: result, error } = await publicDb().rpc("izf_promote_not_yet_eligible", {
       _token: data.token,
       _registration_id: data.registration_id,
-      _eligible_student_id: data.eligible_student_id,
+      _eligible_student_id: data.eligible_student_id as string,
     });
     adminError(error);
     const payload = result as { ok?: boolean; error?: string } | null;

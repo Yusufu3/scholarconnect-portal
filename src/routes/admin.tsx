@@ -401,6 +401,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
             <Select value={selectedEligibleId} onValueChange={setSelectedEligibleId}>
               <SelectTrigger><SelectValue placeholder="Select eligible student…" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="__new__">➕ Add as a new eligible student (uses their submitted name)</SelectItem>
                 {students.filter((s) => !s.not_yet_eligible && !s.registration).map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.full_name}{s.reg_number ? ` · ${s.reg_number}` : ""}</SelectItem>
                 ))}
@@ -413,7 +414,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
               if (!promoting?.registration || !selectedEligibleId) return;
               try {
                 setPromoteMutationPending(true);
-                await promote({ data: { registration_id: promoting.registration.id, eligible_student_id: selectedEligibleId, token: getToken() } });
+                await promote({ data: { registration_id: promoting.registration.id, eligible_student_id: selectedEligibleId === "__new__" ? null : selectedEligibleId, token: getToken() } });
                 toast.success("Applicant approved as eligible.");
                 setPromoting(null);
                 setSelectedEligibleId("");
