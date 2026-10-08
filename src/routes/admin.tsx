@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Download, FileSpreadsheet, LogOut, Pencil, Plus, Search, Trash2, Eye, Lock } from "lucide-react";
+import { Download, FileSpreadsheet, LogOut, Pencil, Plus, Search, Trash2, Eye, Lock, CheckCircle2 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminResetRegistration,
+  adminStatus, adminLogin, adminListStudents, adminCreateStudent, adminUpdateStudent, adminDeleteStudent, adminResetRegistration, adminPromoteNotYetEligible,
 } from "@/lib/izf.functions";
 import { downloadExcel, downloadPdf, type Layout } from "@/lib/export";
 
@@ -311,9 +311,13 @@ function SubmissionsSection({ students }: { students: Student[] }) {
   const [filter, setFilter] = useState("submitted");
   const [viewing, setViewing] = useState<Student | null>(null);
   const [resetting, setResetting] = useState<Student | null>(null);
+  const [promoting, setPromoting] = useState<Student | null>(null);
+  const [selectedEligibleId, setSelectedEligibleId] = useState("");
   const resetRegistration = useServerFn(adminResetRegistration);
+  const promote = useServerFn(adminPromoteNotYetEligible);
   const qc = useQueryClient();
   const [resetBusy, setResetBusy] = useState(false);
+  const [promoteMutationPending, setPromoteMutationPending] = useState(false);
   const searched = useSearch(students, term);
   const rows = searched.filter((s) => {
     if (filter === "all") return true;
@@ -375,6 +379,7 @@ function SubmissionsSection({ students }: { students: Student[] }) {
                 <td className="p-3"><StatusBadge s={s} /></td>
                 <td className="p-3"><div className="flex justify-end gap-1">
                   <Button size="icon" variant="ghost" aria-label="View" onClick={() => setViewing(s)}><Eye className="h-4 w-4" /></Button>
+                  {s.not_yet_eligible && <Button size="sm" variant="outline" onClick={() => { setPromoting(s); setSelectedEligibleId(""); }}><CheckCircle2 className="mr-1 h-4 w-4" /> Approve as Eligible</Button>}
                   {s.registration && <Button size="sm" variant="outline" aria-label="Reset registration to pending" onClick={() => setResetting(s)} disabled={resetBusy}>Reset to Pending</Button>}
                 </div></td>
               </tr>
@@ -384,6 +389,44 @@ function SubmissionsSection({ students }: { students: Student[] }) {
         </table>
       </CardContent>
       {viewing && <ViewDialog s={viewing} onClose={() => setViewing(null)} />}
+      <Dialog open={!!promoting} onOpenChange={(o) => { if (!o) { setPromoting(null); setSelectedEligibleId(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve as Eligible</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select the official eligible record that belongs to <span className="font-medium text-foreground">{promoting?.full_name}</span>. Their submitted bank and personal details will be preserved.
+            </p>
+            <Select value={selectedEligibleId} onValueChange={setSelectedEligibleId}>
+              <SelectTrigger><SelectValue placeholder="Select eligible student…" /></SelectTrigger>
+              <SelectContent>
+                {students.filter((s) => !s.not_yet_eligible && !s.registration).map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.full_name}{s.reg_number ? ` · ${s.reg_number}` : ""}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPromoting(null); setSelectedEligibleId(""); }}>Cancel</Button>
+            <Button disabled={!selectedEligibleId || !promoting?.registration || promoteMutationPending} onClick={async () => {
+              if (!promoting?.registration || !selectedEligibleId) return;
+              try {
+                setPromoteMutationPending(true);
+                await promote({ data: { registration_id: promoting.registration.id, eligible_student_id: selectedEligibleId, token: getToken() } });
+                toast.success("Applicant approved as eligible.");
+                setPromoting(null);
+                setSelectedEligibleId("");
+                await qc.invalidateQueries({ queryKey: ["students"] });
+              } catch (e) {
+                toast.error((e as Error)?.message || "Could not approve applicant.");
+              } finally {
+                setPromoteMutationPending(false);
+              }
+            }}>{promoteMutationPending ? "Approving…" : "Approve as Eligible"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <AlertDialog open={!!resetting} onOpenChange={(o) => !o && setResetting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
