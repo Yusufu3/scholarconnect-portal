@@ -36,6 +36,13 @@
       "when": 1791348672038,
       "tag": "0004_bank_and_not_yet_eligible",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791437026789,
+      "tag": "0005_promote_not_yet_eligible",
+      "breakpoints": true
     }
   ]
 }

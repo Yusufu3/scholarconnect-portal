@@ -185,6 +185,14 @@ export type Database = {
         }[]
       }
       izf_check_admin: { Args: { _token: string }; Returns: undefined }
+      izf_promote_not_yet_eligible: {
+        Args: {
+          _eligible_student_id: string
+          _registration_id: string
+          _token: string
+        }
+        Returns: Json
+      }
       izf_submit_registration: {
         Args: {
           _bank_account_name: string
