@@ -1,3 +1,4 @@
+import { DEFAULT_CAMPUS, DEFAULT_SEMESTER, DEFAULT_FEES, DEFAULT_STATUS, remainingYears, fmtMWK, universityOf } from "@/lib/student-info";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -143,12 +144,21 @@ function Dashboard() {
   );
 }
 
+function infoRows(s: Student): [string, string][] {
+  const rem = remainingYears(s.expected_finish_year);
+  return [
+    ["University", universityOf(s)], ["Campus", s.campus ?? DEFAULT_CAMPUS], ["Semester", String(s.semester ?? DEFAULT_SEMESTER)],
+    ["Required Fees / Year (MWK)", fmtMWK(s.required_fees_mwk)], ["Expected Finish Year", s.expected_finish_year?.toString() ?? "—"],
+    ["Remaining Years", rem == null ? "—" : String(rem)], ["Status", s.status ?? DEFAULT_STATUS],
+  ];
+}
+
 function useSearch(students: Student[], term: string) {
   return useMemo(() => {
     const t = term.trim().toLowerCase();
     if (!t) return students;
     return students.filter((s) =>
-      [s.full_name, s.reg_number, s.programme, s.registration?.reg_number, String(s.sn ?? "")].some((v) => v?.toLowerCase().includes(t)),
+      [s.full_name, s.reg_number, s.programme, universityOf(s), s.campus, s.status, s.expected_finish_year?.toString(), s.registration?.reg_number, String(s.sn ?? "")].some((v) => v?.toLowerCase().includes(t)),
     );
   }, [students, term]);
 }
@@ -187,14 +197,19 @@ function EligibleSection({ students }: { students: Student[] }) {
       <CardContent className="overflow-x-auto p-0 sm:p-6 sm:pt-0">
         <table className="w-full text-sm">
           <thead className="border-b bg-muted/50 text-left">
-            <tr><th className="p-3">S/N</th><th className="p-3">Name</th><th className="hidden p-3 md:table-cell">Programme</th><th className="p-3">Status</th><th className="p-3 text-right">Actions</th></tr>
+            <tr><th className="p-3">S/N</th><th className="p-3">Name</th><th className="hidden p-3 md:table-cell">Programme</th><th className="hidden p-3 lg:table-cell">Sem.</th><th className="hidden p-3 lg:table-cell">Fees / Year (MWK)</th><th className="hidden p-3 lg:table-cell">Finish</th><th className="hidden p-3 lg:table-cell">Remaining</th><th className="hidden p-3 lg:table-cell">Status</th><th className="p-3">Submission</th><th className="p-3 text-right">Actions</th></tr>
           </thead>
           <tbody>
             {rows.map((s) => (
               <tr key={s.id} className="border-b last:border-0">
                 <td className="p-3 text-muted-foreground">{s.sn ?? "—"}</td>
-                <td className="p-3 font-medium">{s.full_name}<div className="text-xs font-normal text-muted-foreground">{s.institution}{s.reg_number ? ` · ${s.reg_number}` : ""}</div></td>
+                <td className="p-3 font-medium">{s.full_name}<div className="text-xs font-normal text-muted-foreground">{universityOf(s)} · {s.campus ?? DEFAULT_CAMPUS}{s.reg_number ? ` · ${s.reg_number}` : ""}</div></td>
                 <td className="hidden p-3 md:table-cell">{s.programme ?? s.registration?.programme ?? "—"}</td>
+                <td className="hidden p-3 lg:table-cell">{s.semester ?? DEFAULT_SEMESTER}</td>
+                <td className="hidden p-3 lg:table-cell">{Number(s.required_fees_mwk ?? DEFAULT_FEES).toLocaleString("en-US")}</td>
+                <td className="hidden p-3 lg:table-cell">{s.expected_finish_year ?? "—"}</td>
+                <td className="hidden p-3 lg:table-cell">{remainingYears(s.expected_finish_year) ?? "—"}</td>
+                <td className="hidden p-3 lg:table-cell">{s.status ?? DEFAULT_STATUS}</td>
                 <td className="p-3"><StatusBadge s={s} /></td>
                 <td className="p-3">
                   <div className="flex justify-end gap-1">
@@ -205,7 +220,7 @@ function EligibleSection({ students }: { students: Student[] }) {
                 </td>
               </tr>
             ))}
-            {!rows.length && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">No students found.</td></tr>}
+            {!rows.length && <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">No students found.</td></tr>}
           </tbody>
         </table>
       </CardContent>
@@ -236,14 +251,19 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
     full_name: student?.full_name ?? "",
     reg_number: student?.reg_number ?? "",
     programme: student?.programme ?? "",
-    institution: student?.institution ?? "UNIMA",
+    university: student ? universityOf(student) : "UNIMA",
+    campus: student?.campus ?? DEFAULT_CAMPUS,
+    semester: String(student?.semester ?? DEFAULT_SEMESTER),
+    required_fees_mwk: String(Number(student?.required_fees_mwk ?? DEFAULT_FEES)),
+    expected_finish_year: student?.expected_finish_year?.toString() ?? "",
+    status: student?.status ?? DEFAULT_STATUS,
   });
   const [busy, setBusy] = useState(false);
-  const valid = f.full_name.trim().length >= 2 && f.institution.trim() && (!f.sn || /^\d+$/.test(f.sn));
+  const valid = f.full_name.trim().length >= 2 && f.university.trim() && f.campus.trim() && (!f.sn || /^\d+$/.test(f.sn)) && /^[1-3]$/.test(f.semester) && /^\d+(\.\d+)?$/.test(f.required_fees_mwk.replace(/,/g, "")) && (!f.expected_finish_year || /^\d{4}$/.test(f.expected_finish_year)) && f.status.trim();
 
   async function save() {
     setBusy(true);
-    const data = { sn: f.sn ? Number(f.sn) : null, full_name: f.full_name, reg_number: f.reg_number || null, programme: f.programme || null, institution: f.institution };
+    const data = { sn: f.sn ? Number(f.sn) : null, full_name: f.full_name, reg_number: f.reg_number || null, programme: f.programme || null, university: f.university, campus: f.campus, semester: Number(f.semester), required_fees_mwk: Number(f.required_fees_mwk.replace(/,/g, "")), expected_finish_year: f.expected_finish_year ? Number(f.expected_finish_year) : null, status: f.status };
     try {
       if (student) await update({ data: { ...data, id: student.id, token: getToken() } });
       else await create({ data: { ...data, token: getToken() } });
@@ -271,7 +291,10 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
         <DialogHeader><DialogTitle>{student ? "Edit student" : "Add eligible student"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           {inp("full_name", "Official full name *")}
-          <div className="grid grid-cols-2 gap-3">{inp("sn", "S/N")}{inp("institution", "Institution *")}</div>
+          <div className="grid grid-cols-2 gap-3">{inp("sn", "S/N")}{inp("university", "University *")}</div>
+          <div className="grid grid-cols-2 gap-3">{inp("campus", "Campus *")}{inp("semester", "Semester *", "1, 2 or 3")}</div>
+          <div className="grid grid-cols-2 gap-3">{inp("required_fees_mwk", "Required Fees / Year (MWK) *")}{inp("expected_finish_year", "Expected Finish Year", f.expected_finish_year && /^\d{4}$/.test(f.expected_finish_year) ? `Remaining Years: ${remainingYears(Number(f.expected_finish_year))}` : "e.g. 2029")}</div>
+          {inp("status", "Status *")}
           {inp("reg_number", "Registration Number", "If set, students must enter this exact number.")}
           {inp("programme", "Programme Name", "If set, it is filled in automatically for the student.")}
         </div>
@@ -287,7 +310,7 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
 function ViewDialog({ s, onClose }: { s: Student; onClose: () => void }) {
   const r = s.registration;
   const rows: [string, string][] = [
-    ["Official name", s.full_name], ["S/N", String(s.sn ?? "—")], ["Institution", s.institution], ["Status", r ? "Submitted" : "Pending"],
+    ["Official name", s.full_name], ["S/N", String(s.sn ?? "—")], ...infoRows(s), ["Submission", r ? "Submitted" : "Pending"],
     ...(r ? ([
       ["First Name", r.first_name], ["Middle Name", r.middle_name || "—"], ["Surname", r.surname],
       ["Personal Account Number", r.personal_account_number], ["Registration Number", r.reg_number], ["Bank Name", r.bank_name || "—"], ["Account Name", r.bank_account_name || "—"], ["Account Number", r.bank_account_number || "—"],
@@ -343,12 +366,12 @@ function SubmissionsSection({ students }: { students: Student[] }) {
             variant="outline"
             onClick={async () => {
               const pending = students.filter((s) => !s.registration && !s.not_yet_eligible);
-              const columns = ["No.", "S/N", "Official Name", "Institution", "Registration No.", "Programme", "Status"];
+              const columns = ["No.", "S/N", "Official Name", "University", "Campus", "Semester", "Required Fees / Year (MWK)", "Expected Finish Year", "Remaining Years", "Status", "Registration No.", "Programme", "Submission"];
               const rows = pending.map((s, i) => [
                 String(i + 1),
                 String(s.sn ?? ""),
                 s.full_name,
-                s.institution,
+                ...infoRows(s).map((x) => x[1]),
                 s.reg_number ?? "",
                 s.programme ?? "",
                 "Pending",
@@ -468,7 +491,13 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
   { key: "reg", label: "Registration No.", get: (s) => s.registration?.reg_number ?? s.reg_number ?? "" },
   { key: "year", label: "Year of Study", get: (s) => s.registration?.year_of_study ?? "" },
   { key: "programme", label: "Programme", get: (s) => s.registration?.programme ?? s.programme ?? "" },
-  { key: "institution", label: "Institution", get: (s) => s.institution },
+  { key: "university", label: "University", get: (s) => universityOf(s) },
+  { key: "campus", label: "Campus", get: (s) => s.campus ?? DEFAULT_CAMPUS },
+  { key: "semester", label: "Semester", get: (s) => String(s.semester ?? DEFAULT_SEMESTER) },
+  { key: "fees", label: "Required Fees / Year (MWK)", get: (s) => Number(s.required_fees_mwk ?? DEFAULT_FEES).toLocaleString("en-US") },
+  { key: "finish", label: "Expected Finish Year", get: (s) => s.expected_finish_year?.toString() ?? "" },
+  { key: "remaining", label: "Remaining Years", get: (s) => remainingYears(s.expected_finish_year)?.toString() ?? "" },
+  { key: "sstatus", label: "Student Status", get: (s) => s.status ?? DEFAULT_STATUS },
   { key: "bank", label: "Account Number", get: (s) => s.registration?.bank_account_number ?? "" },
   { key: "bankname", label: "Bank Name", get: (s) => s.registration?.bank_name ?? "" },
   { key: "accountname", label: "Account Name", get: (s) => s.registration?.bank_account_name ?? "" },
