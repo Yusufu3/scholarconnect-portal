@@ -119,6 +119,30 @@ export const updateBankDetails = createServerFn({ method: "POST" })
     }
   });
 
+export const updateContactDetails = createServerFn({ method: "POST" })
+  .inputValidator((d) => z.object({
+    eligible_student_id: z.string().uuid(),
+    contact_phone: z.string().trim().regex(/^\+?[0-9 ]{7,20}$/, "Enter a valid contact number"),
+    contact_email: z.string().trim().email("Enter a valid email").max(255),
+    national_id: z.string().trim().min(1).max(30),
+    father_national_id: z.string().trim().min(1).max(30),
+    mother_national_id: z.string().trim().min(1).max(30),
+    gender: z.enum(["F", "M"]),
+  }).parse(d))
+  .handler(async ({ data }) => {
+    const { data: result, error } = await (publicDb().rpc as any)("izf_update_contact_details", {
+      _eligible_student_id: data.eligible_student_id, _phone: data.contact_phone, _email: data.contact_email,
+      _national_id: data.national_id, _father_id: data.father_national_id, _mother_id: data.mother_national_id, _gender: data.gender,
+    });
+    if (error) {
+      logServerError("updateContactDetails RPC failed", error);
+      return { ok: false as const, error: "Could not save. Please try again." };
+    }
+    const payload = result as { ok?: boolean; error?: string } | null;
+    if (!payload?.ok) return { ok: false as const, error: payload?.error || "Could not save. Please try again." };
+    return { ok: true as const };
+  });
+
 // ---------- Admin ----------
 
 export const adminLogin = createServerFn({ method: "POST" })
