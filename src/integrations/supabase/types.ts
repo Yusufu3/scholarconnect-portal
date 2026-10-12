@@ -82,12 +82,18 @@ export type Database = {
           bank_account_name: string | null
           bank_account_number: string | null
           bank_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           eligibility_status: string
           eligible_student_id: string | null
+          father_national_id: string | null
           first_name: string
+          gender: string | null
           id: string
           middle_name: string | null
+          mother_national_id: string | null
+          national_id: string | null
           personal_account_number: string
           programme: string
           reg_number: string
@@ -98,12 +104,18 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           eligibility_status?: string
           eligible_student_id?: string | null
+          father_national_id?: string | null
           first_name: string
+          gender?: string | null
           id?: string
           middle_name?: string | null
+          mother_national_id?: string | null
+          national_id?: string | null
           personal_account_number: string
           programme: string
           reg_number: string
@@ -114,12 +126,18 @@ export type Database = {
           bank_account_name?: string | null
           bank_account_number?: string | null
           bank_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           eligibility_status?: string
           eligible_student_id?: string | null
+          father_national_id?: string | null
           first_name?: string
+          gender?: string | null
           id?: string
           middle_name?: string | null
+          mother_national_id?: string | null
+          national_id?: string | null
           personal_account_number?: string
           programme?: string
           reg_number?: string
@@ -215,6 +233,18 @@ export type Database = {
           _bank_account_number: string
           _bank_name: string
           _eligible_student_id: string
+        }
+        Returns: Json
+      }
+      izf_update_contact_details: {
+        Args: {
+          _eligible_student_id: string
+          _email: string
+          _father_id: string
+          _gender: string
+          _mother_id: string
+          _national_id: string
+          _phone: string
         }
         Returns: Json
       }

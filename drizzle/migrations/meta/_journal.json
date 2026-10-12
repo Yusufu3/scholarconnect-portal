@@ -43,6 +43,13 @@
       "when": 1791437026789,
       "tag": "0005_promote_not_yet_eligible",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791796452394,
+      "tag": "0006_izf_contact_details",
+      "breakpoints": true
     }
   ]
 }
