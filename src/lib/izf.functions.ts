@@ -174,7 +174,9 @@ type Registration = {
 };
 type Student = {
   id: string; sn: number | null; full_name: string; reg_number: string | null; programme: string | null;
-  institution: string; created_at: string; updated_at: string;
+  institution: string; university?: string | null; campus?: string | null; semester?: number | null;
+  required_fees_mwk?: number | string | null; expected_finish_year?: number | null; status?: string | null;
+  created_at: string; updated_at: string;
 };
 
 export const adminListStudents = createServerFn({ method: "POST" })
@@ -191,30 +193,33 @@ const studentSchema = z.object({
   full_name: z.string().trim().min(2).max(120),
   reg_number: z.string().trim().max(40).nullable(),
   programme: z.string().trim().max(150).nullable(),
-  institution: z.string().trim().min(1).max(60),
+  university: z.string().trim().min(1).max(80),
+  campus: z.string().trim().min(1).max(80),
+  semester: z.number().int().min(1).max(3),
+  required_fees_mwk: z.number().nonnegative().max(1e12),
+  expected_finish_year: z.number().int().min(2000).max(2100).nullable(),
+  status: z.string().trim().min(1).max(40),
 });
+
+type StudentInput = z.infer<typeof studentSchema>;
+async function saveStudent(token: string, id: string | null, d: StudentInput) {
+  const { error } = await publicDb().rpc("izf_admin_save_student", {
+    _token: token, _id: id as string, _sn: d.sn as number, _full_name: d.full_name,
+    _reg_number: d.reg_number ?? "", _programme: d.programme ?? "", _university: d.university,
+    _campus: d.campus, _semester: d.semester, _required_fees: d.required_fees_mwk,
+    _expected_finish_year: d.expected_finish_year as number, _status: d.status,
+  });
+  adminError(error);
+  return { ok: true };
+}
 
 export const adminCreateStudent = createServerFn({ method: "POST" })
   .inputValidator((d) => studentSchema.extend({ token: tok }).parse(d))
-  .handler(async ({ data: { token, ...d } }) => {
-    const { error } = await publicDb().rpc("izf_admin_create_student", {
-      _token: token, _sn: d.sn as number, _full_name: d.full_name,
-      _reg_number: d.reg_number ?? "", _programme: d.programme ?? "", _institution: d.institution,
-    });
-    adminError(error);
-    return { ok: true };
-  });
+  .handler(async ({ data: { token, ...d } }) => saveStudent(token, null, d));
 
 export const adminUpdateStudent = createServerFn({ method: "POST" })
   .inputValidator((d) => studentSchema.extend({ id: z.string().uuid(), token: tok }).parse(d))
-  .handler(async ({ data: { token, ...d } }) => {
-    const { error } = await publicDb().rpc("izf_admin_update_student", {
-      _token: token, _id: d.id, _sn: d.sn as number, _full_name: d.full_name,
-      _reg_number: d.reg_number ?? "", _programme: d.programme ?? "", _institution: d.institution,
-    });
-    adminError(error);
-    return { ok: true };
-  });
+  .handler(async ({ data: { token, id, ...d } }) => saveStudent(token, id, d));
 
 export const adminDeleteStudent = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ id: z.string().uuid(), token: tok }).parse(d))
