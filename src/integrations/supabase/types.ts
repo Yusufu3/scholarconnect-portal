@@ -46,33 +46,51 @@ export type Database = {
       }
       eligible_students: {
         Row: {
+          campus: string
           created_at: string
+          expected_finish_year: number | null
           full_name: string
           id: string
           institution: string
           programme: string | null
           reg_number: string | null
+          required_fees_mwk: number
+          semester: number
           sn: number | null
+          status: string
+          university: string
           updated_at: string
         }
         Insert: {
+          campus?: string
           created_at?: string
+          expected_finish_year?: number | null
           full_name: string
           id?: string
           institution?: string
           programme?: string | null
           reg_number?: string | null
+          required_fees_mwk?: number
+          semester?: number
           sn?: number | null
+          status?: string
+          university?: string
           updated_at?: string
         }
         Update: {
+          campus?: string
           created_at?: string
+          expected_finish_year?: number | null
           full_name?: string
           id?: string
           institution?: string
           programme?: string | null
           reg_number?: string | null
+          required_fees_mwk?: number
+          semester?: number
           sn?: number | null
+          status?: string
+          university?: string
           updated_at?: string
         }
         Relationships: []
@@ -180,6 +198,23 @@ export type Database = {
       }
       izf_admin_list: { Args: { _token: string }; Returns: Json }
       izf_admin_login: { Args: { _password: string }; Returns: string }
+      izf_admin_save_student: {
+        Args: {
+          _campus: string
+          _expected_finish_year: number
+          _full_name: string
+          _id: string
+          _programme: string
+          _reg_number: string
+          _required_fees: number
+          _semester: number
+          _sn: number
+          _status: string
+          _token: string
+          _university: string
+        }
+        Returns: undefined
+      }
       izf_admin_status: { Args: { _token: string }; Returns: boolean }
       izf_admin_update_student: {
         Args: {
