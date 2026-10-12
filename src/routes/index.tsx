@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { matchStudent, submitRegistration, updateBankDetails } from "@/lib/izf.functions";
+import { matchStudent, updateContactDetails } from "@/lib/izf.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -100,13 +100,13 @@ function StudentPage() {
                   className={`w-full rounded-md border p-4 text-left transition ${selected?.id === m.id ? "border-primary bg-secondary ring-2 ring-primary/30" : "hover:bg-muted"}`}>
                   <div className="font-medium">{m.full_name}</div>
                   {m.programme && <div className="text-sm text-muted-foreground">{m.programme}</div>}
-                  {m.registered && <div className="mt-1 text-sm text-destructive">Already submitted — add bank details</div>}
+                  {m.registered && <div className="mt-1 text-sm text-destructive">Submitted — update your details</div>}
                 </button>
               ))}
               <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row">
                 <Button variant="outline" className="flex-1" onClick={() => setStep("search")}><ArrowLeft className="mr-2 h-4 w-4" /> Not me</Button>
                 <Button className="flex-1" disabled={!selected} onClick={() => setStep("form")}>
-                  {selected?.registered ? "Add Bank Details" : "Continue"}
+                  Continue
                 </Button>
               </div>
             </CardContent>
@@ -120,7 +120,7 @@ function StudentPage() {
             <CardContent className="space-y-5 py-10">
               <CheckCircle2 className="mx-auto h-16 w-16 text-success" />
               <h1 className="font-serif text-2xl font-bold">Your information has been successfully submitted.</h1>
-              <p className="text-muted-foreground">If you were not on the eligible list, your application is marked <strong>Not Yet Eligible</strong> and will be reviewed by IZF. Please join the official WhatsApp group for updates.</p>
+              <p className="text-muted-foreground">Your details have been updated. Please join the official WhatsApp group for updates.</p>
               <Button asChild size="lg" className="w-full bg-success text-success-foreground hover:bg-success/90 sm:w-auto">
                 <a href={WHATSAPP} target="_blank" rel="noopener noreferrer"><MessageCircle className="mr-2 h-5 w-5" /> Join the IZF Scholarship WhatsApp Group</a>
               </Button>
