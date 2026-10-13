@@ -170,6 +170,8 @@ type Registration = {
   id: string; eligible_student_id: string | null; first_name: string; middle_name: string | null;
   surname: string; personal_account_number: string; reg_number: string; year_of_study: string;
   programme: string; bank_name: string | null; bank_account_number: string | null; bank_account_name: string | null;
+  contact_phone: string | null; contact_email: string | null; national_id: string | null;
+  father_national_id: string | null; mother_national_id: string | null; gender: string | null;
   eligibility_status: "eligible" | "not_yet_eligible"; created_at: string;
 };
 type Student = {
