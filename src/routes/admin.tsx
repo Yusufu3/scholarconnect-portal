@@ -1,4 +1,4 @@
-import { DEFAULT_CAMPUS, DEFAULT_SEMESTER, DEFAULT_FEES, DEFAULT_STATUS, remainingYears, fmtMWK, universityOf } from "@/lib/student-info";
+import { DEFAULT_CAMPUS, DEFAULT_SEMESTER, DEFAULT_FEES, DEFAULT_STATUS, remainingYears, remainingOf, finishYearOf, expectedFinishFromStudy, remainingYearsFromStudy, fmtMWK, universityOf } from "@/lib/student-info";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -145,12 +145,19 @@ function Dashboard() {
 }
 
 function infoRows(s: Student): [string, string][] {
-  const rem = remainingYears(s.expected_finish_year);
+  const rem = remainingOf(s);
   return [
     ["University", universityOf(s)], ["Campus", s.campus ?? DEFAULT_CAMPUS], ["Semester", String(s.semester ?? DEFAULT_SEMESTER)],
-    ["Required Fees / Year (MWK)", fmtMWK(s.required_fees_mwk)], ["Expected Finish Year", s.expected_finish_year?.toString() ?? "—"],
+    ["Required Fees / Year (MWK)", fmtMWK(s.required_fees_mwk)], ["Expected Finish Year", finishYearOf(s)?.toString() ?? "—"],
     ["Remaining Years", rem == null ? "—" : String(rem)], ["Status", s.status ?? DEFAULT_STATUS],
   ];
+}
+
+function finishHint(student: Student | null | undefined, current: string): string {
+  const y = student?.registration?.year_of_study;
+  const from = expectedFinishFromStudy(y);
+  if (from != null) return `Year of Study ${y} → Expected Finish ${from} · Remaining Years: ${remainingYearsFromStudy(y)}`;
+  return current && /^\d{4}$/.test(current) ? `Remaining Years: ${remainingYears(Number(current))}` : "e.g. 2029";
 }
 
 function useSearch(students: Student[], term: string) {
@@ -158,7 +165,7 @@ function useSearch(students: Student[], term: string) {
     const t = term.trim().toLowerCase();
     if (!t) return students;
     return students.filter((s) =>
-      [s.full_name, s.reg_number, s.programme, universityOf(s), s.campus, s.status, s.expected_finish_year?.toString(), s.registration?.reg_number, String(s.sn ?? "")].some((v) => v?.toLowerCase().includes(t)),
+      [s.full_name, s.reg_number, s.programme, universityOf(s), s.campus, s.status, finishYearOf(s)?.toString(), s.registration?.reg_number, String(s.sn ?? "")].some((v) => v?.toLowerCase().includes(t)),
     );
   }, [students, term]);
 }
@@ -207,8 +214,8 @@ function EligibleSection({ students }: { students: Student[] }) {
                 <td className="hidden p-3 md:table-cell">{s.programme ?? s.registration?.programme ?? "—"}</td>
                 <td className="hidden p-3 lg:table-cell">{s.semester ?? DEFAULT_SEMESTER}</td>
                 <td className="hidden p-3 lg:table-cell">{Number(s.required_fees_mwk ?? DEFAULT_FEES).toLocaleString("en-US")}</td>
-                <td className="hidden p-3 lg:table-cell">{s.expected_finish_year ?? "—"}</td>
-                <td className="hidden p-3 lg:table-cell">{remainingYears(s.expected_finish_year) ?? "—"}</td>
+                <td className="hidden p-3 lg:table-cell">{finishYearOf(s) ?? "—"}</td>
+                <td className="hidden p-3 lg:table-cell">{remainingOf(s) ?? "—"}</td>
                 <td className="hidden p-3 lg:table-cell">{s.status ?? DEFAULT_STATUS}</td>
                 <td className="p-3"><StatusBadge s={s} /></td>
                 <td className="p-3">
@@ -255,7 +262,7 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
     campus: student?.campus ?? DEFAULT_CAMPUS,
     semester: String(student?.semester ?? DEFAULT_SEMESTER),
     required_fees_mwk: String(Number(student?.required_fees_mwk ?? DEFAULT_FEES)),
-    expected_finish_year: student?.expected_finish_year?.toString() ?? "",
+    expected_finish_year: student?.expected_finish_year?.toString() ?? (expectedFinishFromStudy(student?.registration?.year_of_study)?.toString() ?? ""),
     status: student?.status ?? DEFAULT_STATUS,
   });
   const [busy, setBusy] = useState(false);
@@ -293,7 +300,7 @@ function StudentDialog({ student, onClose }: { student: Student | null; onClose:
           {inp("full_name", "Official full name *")}
           <div className="grid grid-cols-2 gap-3">{inp("sn", "S/N")}{inp("university", "University *")}</div>
           <div className="grid grid-cols-2 gap-3">{inp("campus", "Campus *")}{inp("semester", "Semester *", "1, 2 or 3")}</div>
-          <div className="grid grid-cols-2 gap-3">{inp("required_fees_mwk", "Required Fees / Year (MWK) *")}{inp("expected_finish_year", "Expected Finish Year", f.expected_finish_year && /^\d{4}$/.test(f.expected_finish_year) ? `Remaining Years: ${remainingYears(Number(f.expected_finish_year))}` : "e.g. 2029")}</div>
+          <div className="grid grid-cols-2 gap-3">{inp("required_fees_mwk", "Required Fees / Year (MWK) *")}{inp("expected_finish_year", "Expected Finish Year", finishHint(student, f.expected_finish_year))}</div>
           {inp("status", "Status *")}
           {inp("reg_number", "Registration Number", "If set, students must enter this exact number.")}
           {inp("programme", "Programme Name", "If set, it is filled in automatically for the student.")}
@@ -495,8 +502,8 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
   { key: "campus", label: "Campus", get: (s) => s.campus ?? DEFAULT_CAMPUS },
   { key: "semester", label: "Semester", get: (s) => String(s.semester ?? DEFAULT_SEMESTER) },
   { key: "fees", label: "Required Fees / Year (MWK)", get: (s) => Number(s.required_fees_mwk ?? DEFAULT_FEES).toLocaleString("en-US") },
-  { key: "finish", label: "Expected Finish Year", get: (s) => s.expected_finish_year?.toString() ?? "" },
-  { key: "remaining", label: "Remaining Years", get: (s) => remainingYears(s.expected_finish_year)?.toString() ?? "" },
+  { key: "finish", label: "Expected Finish Year", get: (s) => finishYearOf(s)?.toString() ?? "" },
+  { key: "remaining", label: "Remaining Years", get: (s) => remainingOf(s)?.toString() ?? "" },
   { key: "sstatus", label: "Student Status", get: (s) => s.status ?? DEFAULT_STATUS },
   { key: "bank", label: "Account Number", get: (s) => s.registration?.bank_account_number ?? "" },
   { key: "bankname", label: "Bank Name", get: (s) => s.registration?.bank_name ?? "" },
