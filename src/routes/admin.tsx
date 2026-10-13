@@ -506,7 +506,10 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
 ];
 
 function ExportSection({ students }: { students: Student[] }) {
-  const [cols, setCols] = useState<string[]>(["no", "first", "middle", "surname", "pan", "reg", "year", "programme"]);
+  const [cols, setCols] = useState<string[]>([
+    "no", "sn", "official", "first", "middle", "surname", "pan", "reg", "year", "programme",
+    "university", "campus", "semester", "fees", "finish", "remaining", "sstatus", "status", "date",
+  ]);
   const [layout, setLayout] = useState<Layout>("grid");
   const [scope, setScope] = useState("submitted");
   const [title, setTitle] = useState("UNIMA Scholarship Students");
