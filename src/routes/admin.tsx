@@ -501,6 +501,12 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
   { key: "bank", label: "Account Number", get: (s) => s.registration?.bank_account_number ?? "" },
   { key: "bankname", label: "Bank Name", get: (s) => s.registration?.bank_name ?? "" },
   { key: "accountname", label: "Account Name", get: (s) => s.registration?.bank_account_name ?? "" },
+  { key: "phone", label: "Contact Number", get: (s) => s.registration?.contact_phone ?? "" },
+  { key: "email", label: "Contact Email", get: (s) => s.registration?.contact_email ?? "" },
+  { key: "gender", label: "Gender", get: (s) => s.registration?.gender ?? "" },
+  { key: "nid", label: "Student National ID", get: (s) => s.registration?.national_id ?? "" },
+  { key: "fnid", label: "Father's National ID", get: (s) => s.registration?.father_national_id ?? "" },
+  { key: "mnid", label: "Mother's National ID", get: (s) => s.registration?.mother_national_id ?? "" },
   { key: "status", label: "Status", get: (s) => s.not_yet_eligible ? "Not Yet Eligible" : (s.registration ? "Submitted" : "Pending") },
   { key: "date", label: "Submitted On", get: (s) => (s.registration ? new Date(s.registration.created_at).toLocaleDateString() : "") },
 ];
@@ -508,7 +514,9 @@ const FIELDS: { key: string; label: string; get: (s: Student, i: number) => stri
 function ExportSection({ students }: { students: Student[] }) {
   const [cols, setCols] = useState<string[]>([
     "no", "sn", "official", "first", "middle", "surname", "pan", "reg", "year", "programme",
-    "university", "campus", "semester", "fees", "finish", "remaining", "sstatus", "status", "date",
+    "university", "campus", "semester", "fees", "finish", "remaining", "sstatus",
+    "bankname", "accountname", "bank", "phone", "email", "gender", "nid", "fnid", "mnid",
+    "status", "date",
   ]);
   const [layout, setLayout] = useState<Layout>("grid");
   const [scope, setScope] = useState("submitted");
